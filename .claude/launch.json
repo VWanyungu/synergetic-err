@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend-dev",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "frontend", "dev"],
+      "port": 3001,
+      "autoPort": false
+    },
+    {
+      "name": "backend-dev",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "backend", "dev"],
+      "port": 3000
+    }
+  ]
+}
