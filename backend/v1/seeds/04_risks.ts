@@ -1,20 +1,42 @@
 import type { Knex } from 'knex';
 import { SEED_PASSWORD_HASH } from './01_users.js';
 
-// Dev-only demo data for the risk distribution and risk register pages.
-const DEPARTMENTS: [name: string, code: string, description: string][] = [
-  ['Legal', 'LG', 'Contracts, licences and regulatory exposure.'],
-  ['Projects', 'PR', 'Delivery schedules, handovers and project controls.'],
-  ['IT', 'IT', 'Systems, data and cyber security risks.'],
-  ['Development Management', 'DM', 'Approvals, land and development pipeline risks.'],
-  ['Mechanical', 'ME', 'Plant, equipment and spare-parts supply.'],
-  ['Civil', 'CV', 'Structures, roads and inspection records.'],
-  ['Electrical', 'EL', 'Substations, protection systems and power supply.'],
-  ['TLM', 'TL', 'Transmission lines, field crews and maintenance.'],
-  ['Corporate Services', 'CS', 'Finance, leases and administration.'],
+export const DEPARTMENTS: [name: string, code: string, description: string][] = [
+  ['People - Talent, Licences, Labour, Welfare', 'PPL', 'Workforce talent, professional licences, labour relations and employee welfare.'],
+  ['Legal', 'LEG', 'Contracts, statutory compliance, litigation and regulatory exposure.'],
+  ['Finance', 'FIN', 'Treasury, financial controls, budgeting, liquidity and accounting.'],
+  ['IT', 'IT', 'Information systems, network infrastructure, data governance and cybersecurity.'],
+  ['Projects', 'PRJ', 'Capital project delivery, contract variations, schedules and handovers.'],
+  ['HSSE', 'HSE', 'Health, workplace safety, site security and environmental sustainability.'],
+  ['Commercial', 'COM', 'Off-take contracts, power purchase agreements, customer relations and tariff risks.'],
+  ['Supply Chain', 'SCM', 'Procurement, vendor reliability, logistics, warehousing and spares.'],
 ];
 
-const OWNERS = [
+export const DIVISIONS: [name: string, code: string, description: string][] = [
+  ['Development Management', 'DM', 'Approvals, permits, land acquisition and development pipeline.'],
+  ['Mechanical', 'ME', 'Plant equipment, turbines, mechanical maintenance and spare parts.'],
+  ['Civil', 'CV', 'Civil infrastructure, access roads, structures, foundations and drainage.'],
+  ['Electrical', 'EL', 'Substations, protection relays, transformers and grid connections.'],
+  ['TLM', 'TL', 'Transmission lines, towers, wayleaves and line maintenance crews.'],
+  ['Corporate Services', 'CS', 'Corporate administration, facilities management and business support.'],
+];
+
+export const RISK_CATEGORIES = [
+  'Strategic',
+  'Financial',
+  'Operational',
+  'Compliance & Legal',
+  'Reputational',
+  'Technology & Cybersecurity',
+  'People & Human Capital',
+  'Supply Chain & Procurement',
+  'HSSE',
+  'External Market',
+  'ESG',
+  'Project',
+] as const;
+
+export const OWNERS = [
   { id: '10000000-0000-0000-0000-000000000011', first: 'Wanjiru', last: 'Otieno', email: 'wanjiru.otieno@err.local' },
   { id: '10000000-0000-0000-0000-000000000012', first: 'Daniel', last: 'Mwangi', email: 'daniel.mwangi@err.local' },
   { id: '10000000-0000-0000-0000-000000000013', first: 'Peter', last: 'Njoroge', email: 'peter.njoroge@err.local' },
@@ -22,75 +44,77 @@ const OWNERS = [
   { id: '10000000-0000-0000-0000-000000000015', first: 'Achieng', last: 'Ouma', email: 'achieng.ouma@err.local' },
   { id: '10000000-0000-0000-0000-000000000016', first: 'Faith', last: 'Chebet', email: 'faith.chebet@err.local' },
   { id: '10000000-0000-0000-0000-000000000017', first: 'Grace', last: 'Wambui', email: 'grace.wambui@err.local' },
+  { id: '10000000-0000-0000-0000-000000000018', first: 'Kevin', last: 'Mutua', email: 'kevin.mutua@err.local' },
 ];
 
-// department -> [title, category, likelihood, impact][]. Order decides the risk code (IT-01, IT-02, ...).
 const RISKS: Record<string, [string, string, number, number][]> = {
-  Legal: [
-    ['Tender documents shared over personal email', 'Legal and compliance', 4, 4],
-    ['Contract renewals tracked in spreadsheets', 'Legal and compliance', 3, 2],
-    ['Expired contractor licences across regional offices', 'Legal and compliance', 3, 5],
-    ['Regulatory filing deadlines missed', 'Legal and compliance', 1, 5],
-    ['Data protection registration lapses', 'Legal and compliance', 2, 4],
-    ['Unsigned subcontractor agreements', 'Legal and compliance', 2, 3],
+  'People - Talent, Licences, Labour, Welfare': [
+    ['Engineering talent turnover and key person dependency', 'People & Human Capital', 4, 4],
+    ['Mandatory professional practising licences lapse', 'Compliance & Legal', 3, 5],
+    ['Collective bargaining agreement negotiation deadlock', 'Operational', 3, 4],
+    ['Field staff mental health and welfare support gaps', 'People & Human Capital', 2, 3],
+    ['Technical succession planning gaps across regional depots', 'Strategic', 3, 4],
+    ['Remote accommodation living standards compliance', 'ESG', 2, 4],
   ],
-  Projects: [
-    ['Delayed handover of the Athi River project site', 'Project delivery', 3, 5],
-    ['Scope creep on framework call-offs', 'Project delivery', 4, 3],
-    ['Contractor insolvency mid-project', 'Project delivery', 2, 5],
-    ['Unapproved variation orders', 'Project delivery', 3, 3],
-    ['Land access disputes on the Kisumu line', 'Project delivery', 3, 4],
-    ['Late community consultations', 'Project delivery', 2, 3],
-    ['Weak cost reporting on active projects', 'Finance', 3, 3],
-    ['Handover documents incomplete', 'Project delivery', 4, 2],
-    ['Site safety induction not enforced', 'People', 2, 5],
+  Legal: [
+    ['Tender documents shared over personal email without encryption', 'Compliance & Legal', 4, 4],
+    ['Contract renewals tracked in spreadsheets', 'Operational', 3, 2],
+    ['Expired contractor operating licences across regional offices', 'Compliance & Legal', 3, 5],
+    ['Regulatory filing deadlines missed', 'Compliance & Legal', 1, 5],
+    ['Data protection registration and privacy policy lapses', 'Compliance & Legal', 2, 4],
+    ['Unsigned subcontractor agreements and liability indemnities', 'Reputational', 2, 3],
+  ],
+  Finance: [
+    ['Forex currency volatility on foreign capital expenditure', 'Financial', 4, 5],
+    ['Delayed milestone billing and contractor retention releases', 'Financial', 3, 4],
+    ['Inadequate debt covenant headroom under high interest rates', 'Financial', 2, 5],
+    ['Office lease renewal terms and escalation clause misalignment', 'Financial', 2, 2],
+    ['Incomplete fixed-asset physical register reconciliation', 'Compliance & Legal', 3, 3],
+    ['Fiscal policy changes and withholding tax audit exposure', 'External Market', 3, 4],
   ],
   IT: [
-    ['Legacy VPN lacks multi-factor authentication', 'Cyber and technology', 2, 5],
-    ['Backup restores not tested quarterly', 'Cyber and technology', 3, 3],
-    ['Single internet provider at head office', 'Operations', 3, 2],
-    ['Shared admin accounts on core systems', 'Cyber and technology', 3, 4],
-    ['Phishing awareness training overdue', 'People', 4, 3],
-    ['Unpatched ERP servers exposed to ransomware', 'Cyber and technology', 4, 4],
-    ['End-of-life laptops still in use', 'Cyber and technology', 3, 2],
-    ['No disaster recovery site', 'Cyber and technology', 2, 5],
+    ['Legacy VPN lacks multi-factor authentication', 'Technology & Cybersecurity', 2, 5],
+    ['Backup restores not tested quarterly across core systems', 'Technology & Cybersecurity', 3, 3],
+    ['Single internet provider redundancy gap at head office', 'Technology & Cybersecurity', 3, 2],
+    ['Shared admin accounts on core supervisory systems', 'Technology & Cybersecurity', 3, 4],
+    ['Phishing awareness training overdue', 'People & Human Capital', 4, 3],
+    ['Unpatched ERP servers exposed to ransomware', 'Technology & Cybersecurity', 4, 4],
+    ['End-of-life laptops and network switches still in use', 'Technology & Cybersecurity', 3, 2],
+    ['Absence of synchronous secondary disaster recovery site', 'Technology & Cybersecurity', 2, 5],
   ],
-  'Development Management': [
-    ['Permit approvals outside agreed timelines', 'Legal and compliance', 3, 4],
-    ['Dependence on a single development partner', 'Operations', 2, 4],
-    ['Inconsistent project appraisal templates', 'Project delivery', 4, 2],
-    ['Stakeholder commitments not tracked', 'Project delivery', 3, 3],
-    ['Unfunded pipeline projects', 'Finance', 3, 4],
+  Projects: [
+    ['Delayed handover of the Athi River project site', 'Project', 3, 5],
+    ['Scope creep on framework engineering call-offs', 'Project', 4, 3],
+    ['Contractor insolvency mid-execution on major transmission line', 'Strategic', 2, 5],
+    ['Unapproved variation orders exceeding contingency budget', 'Financial', 3, 3],
+    ['Land access and wayleave disputes along pipeline corridor', 'ESG', 3, 4],
+    ['Late community consultations leading to project site blockade', 'Reputational', 2, 3],
+    ['Incomplete as-built handover documentation before commissioning', 'Project', 4, 2],
+    ['Site safety induction not enforced for third-party subcontractors', 'HSSE', 2, 5],
   ],
-  Mechanical: [
-    ['Single supplier for turbine spare parts', 'Supply chain', 3, 4],
-    ['Plant maintenance backlog', 'Operations', 4, 3],
-    ['Lubricant stock-outs at remote sites', 'Supply chain', 2, 2],
-    ['Calibration records kept on paper', 'Operations', 3, 2],
+  HSSE: [
+    ['High-voltage substation arc-flash safety audit gaps', 'HSSE', 2, 5],
+    ['Climbing equipment safety recertification lapses for tower crews', 'HSSE', 2, 5],
+    ['Hazardous transformer oil handling and disposal compliance', 'ESG', 2, 4],
+    ['Physical security breaches and vandalism at unmanned stations', 'Operational', 3, 4],
+    ['Vehicle fleet road safety and speed telemetry enforcement gaps', 'HSSE', 3, 4],
+    ['Emergency evacuation response drills overdue at central depot', 'HSSE', 2, 3],
   ],
-  Civil: [
-    ['Ageing culvert inspection records', 'Operations', 3, 3],
-    ['Substandard aggregate deliveries', 'Supply chain', 2, 4],
-    ['Flood damage to access roads', 'Operations', 3, 5],
+  Commercial: [
+    ['Off-taker default on bulk energy purchase agreements', 'Financial', 2, 5],
+    ['Grid tariff renegotiation delays by energy regulator', 'External Market', 3, 4],
+    ['Key industrial customer defection to captive off-grid solar', 'Strategic', 3, 4],
+    ['Adverse public perception regarding transmission route impacts', 'Reputational', 3, 4],
+    ['Cross-border electricity trading price volatility', 'Financial', 3, 3],
+    ['Inaccurate bulk metering calibration leading to unbilled losses', 'Operational', 4, 3],
   ],
-  Electrical: [
-    ['Substation protection relay calibration overdue', 'Operations', 2, 5],
-    ['Transformer oil testing gaps', 'Operations', 3, 3],
-    ['Lightning protection not audited', 'Operations', 2, 4],
-    ['Spare cable stock below minimum', 'Supply chain', 3, 2],
-  ],
-  TLM: [
-    ['Staff turnover in the transmission line team', 'People', 2, 3],
-    ['Vandalism of tower components', 'Operations', 3, 4],
-    ['Right-of-way encroachment', 'Legal and compliance', 4, 3],
-    ['Climbing equipment certification lapses', 'People', 2, 5],
-    ['Patrol records not digitised', 'Operations', 3, 2],
-  ],
-  'Corporate Services': [
-    ['Office lease renewal terms unclear', 'Finance', 2, 2],
-    ['Procurement controls not enforced on framework contracts', 'Finance', 4, 4],
-    ['Key staff succession gaps in finance', 'People', 2, 4],
-    ['Fleet insurance cover below asset value', 'Finance', 2, 3],
+  'Supply Chain': [
+    ['Single supplier dependency for critical turbine spare parts', 'Supply Chain & Procurement', 4, 4],
+    ['Port clearance demurrage delays for imported electrical switchgear', 'Supply Chain & Procurement', 3, 4],
+    ['Substandard aggregate deliveries failing civil structural tests', 'Supply Chain & Procurement', 2, 4],
+    ['Strategic spare parts inventory buffer falling below safety levels', 'Operational', 3, 4],
+    ['Critical vendor modern slavery and environmental audit failure', 'ESG', 2, 4],
+    ['Lubricant and fuel stock-outs at remote line construction sites', 'Supply Chain & Procurement', 2, 3],
   ],
 };
 
@@ -122,8 +146,15 @@ export async function seed(knex: Knex): Promise<void> {
       .ignore();
   }
 
+  // Seed divisions
+  await knex('divisions').whereNotIn('name', DIVISIONS.map(([name]) => name)).del();
+  for (const [name, code, description] of DIVISIONS) {
+    await knex('divisions').insert({ name, code, description }).onConflict('name').merge({ code, description });
+  }
+
   // Reseeding replaces the demo catalogue; departments that are not in the design go too.
   await knex('risks').del();
+  await knex('users').whereIn('department_id', knex('departments').whereNotIn('name', DEPARTMENTS.map(([name]) => name)).select('id')).update({ department_id: null });
   await knex('departments').whereNotIn('name', DEPARTMENTS.map(([name]) => name)).del();
   for (const [name, code, description] of DEPARTMENTS) {
     await knex('departments').insert({ name, code, description }).onConflict('name').merge({ code, description });
