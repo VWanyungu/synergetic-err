@@ -5,14 +5,14 @@
       "name": "frontend-dev",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "--cwd", "frontend", "dev"],
-      "port": 3001,
+      "port": 3003,
       "autoPort": false
     },
     {
       "name": "backend-dev",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "--cwd", "backend", "dev"],
-      "port": 3000
+      "port": 8080
     }
   ]
 }
