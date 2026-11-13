@@ -111,11 +111,11 @@ router.get('/', async (req, res) => {
       .select(registerColumns(rating));
 
     // A risk counts once for every division it affects.
-    const links: { risk_id: string; department_id: string; name: string }[] = rows.length
-      ? await db('risk_divisions as rd').join('departments as d', 'd.id', 'rd.department_id').whereIn('rd.risk_id', rows.map((r) => r.id)).select('rd.risk_id', 'rd.department_id', 'd.name')
+    const links: { risk_id: string; division_id: string; name: string }[] = rows.length
+      ? await db('risk_divisions as rd').join('divisions as d', 'd.id', 'rd.division_id').whereIn('rd.risk_id', rows.map((r) => r.id)).select('rd.risk_id', 'rd.division_id', 'd.name')
       : [];
     const byRisk = new Map(rows.map((r) => [r.id, r]));
-    const divisionRows = links.map((l) => ({ ...byRisk.get(l.risk_id)!, division_id: l.department_id, division: l.name }));
+    const divisionRows = links.map((l) => ({ ...byRisk.get(l.risk_id)!, division_id: l.division_id, division: l.name }));
 
     const total = rows.length;
     const reviewed = rows.filter((r) => r.reviewed).length;

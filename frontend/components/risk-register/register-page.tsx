@@ -74,8 +74,9 @@ export function RegisterPage({ mode, id }: { mode: "department" | "division"; id
   }, [own, id, base, router]);
   const register = useRiskRegister(filters);
   const data = register.data;
-  const nameOf = (deptId: string) => departments.data?.find((d) => d.id === deptId)?.name ?? "…";
-  const registerName = division ? `${nameOf(id)} division` : routeDepartment ? `${nameOf(routeDepartment)} register` : "All departments";
+  const nameOf = (unitId: string, isDivision: boolean = division) =>
+    (isDivision ? divisions.data : departments.data)?.find((d) => d.id === unitId)?.name ?? "…";
+  const registerName = division ? `${nameOf(id, true)} division` : routeDepartment ? `${nameOf(routeDepartment, false)} register` : "All departments";
   const departmentId = routeDepartment;
 
   // Any filter change goes back to page 1, unless it is the page change itself.
@@ -97,11 +98,11 @@ export function RegisterPage({ mode, id }: { mode: "department" | "division"; id
   const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
   const chips: Chip[] = [
     ...(division
-      ? [{ id: "division", label: `Division: ${nameOf(id)}`, onRemove: own ? undefined : () => router.push("/risks") }]
+      ? [{ id: "division", label: `Division: ${nameOf(id, true)}`, onRemove: own ? undefined : () => router.push("/risks") }]
       : departmentId
         ? [{ id: "register", label: `Register: ${registerName.replace(/ register$/, "")}`, onRemove: own ? undefined : () => router.push("/risks/register/all") }]
         : []),
-    ...(division && departmentId ? [{ id: "department", label: `Department: ${nameOf(departmentId)}`, onRemove: () => change({ departmentId: "" }) }] : []),
+    ...(division && departmentId ? [{ id: "department", label: `Department: ${nameOf(departmentId, false)}`, onRemove: () => change({ departmentId: "" }) }] : []),
     ...(statusFiltered(filters.status) ? [{ id: "status", label: `Status: ${filters.status.map(cap).join(", ")}`, onRemove: () => change({ status: [] }) }] : []),
     ...(filters.rating.length ? [{ id: "rating", label: `Rating: ${filters.rating.map(cap).join(", ")}`, onRemove: () => change({ rating: [] }) }] : []),
     ...(filters.month ? [{ id: "month", label: `Snapshot: ${monthLabel(filters.month)}`, onRemove: () => change({ month: "" }) }] : []),
@@ -130,7 +131,7 @@ export function RegisterPage({ mode, id }: { mode: "department" | "division"; id
     <div className="flex flex-col gap-7">
       <PageHeader
         kind={mode}
-        name={division ? nameOf(id) : routeDepartment ? nameOf(routeDepartment) : "All departments"}
+        name={division ? nameOf(id, true) : routeDepartment ? nameOf(routeDepartment, false) : "All departments"}
         switcher={
           division
             ? (divisions.data?.length ?? 0) > 1 ? { items: divisions.data!.map((d) => ({ id: d.id, name: d.name })), selectedId: id, onSelect: (next) => switchTo(`/risks/division/${next}`) } : undefined

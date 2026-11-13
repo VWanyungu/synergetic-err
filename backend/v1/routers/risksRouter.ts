@@ -7,6 +7,21 @@ import { scopedDepartment } from '../utils/scope.js';
 
 const router = express.Router();
 
+export const RISK_CATEGORIES = [
+  'Strategic',
+  'Financial',
+  'Operational',
+  'Compliance & Legal',
+  'Reputational',
+  'Technology & Cybersecurity',
+  'People & Human Capital',
+  'Supply Chain & Procurement',
+  'HSSE',
+  'External Market',
+  'ESG',
+  'Project',
+] as const;
+
 const QUICK = ['noMitigation', 'dueForReview', 'myRisks', 'archived', 'highRisk', 'unassigned', 'overdueActions', 'changedThisWeek'] as const;
 export const csv = (valid: readonly string[]) =>
   Joi.string()
@@ -83,8 +98,8 @@ export function applyFilters(q: Knex.QueryBuilder, f: RegisterFilters, userId: s
       if (f.rating.includes('low')) w.orWhereRaw(`${rating} <= 8`);
     });
   }
-  // A division is a department a risk affects (risk_divisions), as opposed to the department that owns it.
-  if (f.divisionId) q.whereExists(db('risk_divisions as rd').whereRaw('rd.risk_id = r.id').where('rd.department_id', f.divisionId));
+  // A division is an organisational unit a risk affects (risk_divisions), as opposed to the department that owns it.
+  if (f.divisionId) q.whereExists(db('risk_divisions as rd').whereRaw('rd.risk_id = r.id').where('rd.division_id', f.divisionId));
   if (f.ownerId) q.where('r.owner_id', f.ownerId);
   if (f.response) q.where('r.risk_response', f.response);
   // Exactly one box ticked filters; both or neither means no review filter.
@@ -161,11 +176,10 @@ router.get('/register', async (req, res) => {
   }
   const f = value as RegisterFilters & { sort: string; page: number; perPage: number };
   const userId = req.user!.userId;
-  // A Risk Champion only ever sees their own department's register, or the risks affecting their own division, whatever the request asks for.
+  // A Risk Champion only ever sees their own department's register.
   const own = await scopedDepartment(userId);
   if (own) {
-    if (f.divisionId) f.divisionId = own;
-    else f.departmentId = own;
+    f.departmentId = own;
   }
 
   try {
@@ -186,7 +200,8 @@ router.get('/register', async (req, res) => {
       db.raw(`count(*) filter (where ${rating} between 9 and 14)::int as medium`),
       db.raw(`count(*) filter (where ${rating} <= 8)::int as low`),
     );
-    const categories = await db('risks').distinct('category').orderBy('category').pluck('category');
+    const cats = await db('risks').distinct('category').orderBy('category').pluck('category');
+    const categories = Array.from(new Set([...RISK_CATEGORIES, ...cats]));
 
     res.status(200).json({
       status: 'success',
@@ -235,13 +250,11 @@ router.get('/registers', async (req, res) => {
   }
 });
 
-// GET /risks/divisions — like /registers, but counting the risks that affect each department rather than the ones it owns.
-router.get('/divisions', async (req, res) => {
+// GET /risks/divisions — counting the risks that affect each division rather than the department that owns them.
+router.get('/divisions', async (_req, res) => {
   try {
-    const own = await scopedDepartment(req.user!.userId);
-    const rows = await db('departments as d')
-      .modify((q) => own && q.where('d.id', own))
-      .leftJoin('risk_divisions as rd', 'rd.department_id', 'd.id')
+    const rows = await db('divisions as d')
+      .leftJoin('risk_divisions as rd', 'rd.division_id', 'd.id')
       .leftJoin('risks as r', function () {
         this.on('r.id', 'rd.risk_id').andOnNull('r.archived_at').andOnIn('r.status', ['open', 'in_progress']);
       })
@@ -251,7 +264,7 @@ router.get('/divisions', async (req, res) => {
         'd.id',
         'd.name',
         'd.code',
-        db.raw('null as description'),
+        'd.description',
         db.raw('count(r.id)::int as total'),
         db.raw('count(r.id) filter (where r.rating >= 15)::int as high'),
         db.raw('count(r.id) filter (where r.rating between 9 and 14)::int as medium'),
@@ -266,15 +279,17 @@ router.get('/divisions', async (req, res) => {
 // GET /risks/form-options — what the New risk form needs besides departments.
 router.get('/form-options', async (req, res) => {
   try {
-    const [cats, owners] = await Promise.all([
+    const [cats, divisions, owners] = await Promise.all([
       db('risks').distinct('category').orderBy('category'),
+      db('divisions').select('id', 'name', 'code').orderBy('name'),
       db('users')
         .select('id', db.raw(`trim(concat(first_name, ' ', last_name)) as name`))
         .orderBy('first_name'),
     ]);
+    const categories = Array.from(new Set([...RISK_CATEGORIES, ...cats.map((c) => c.category)]));
     res.status(200).json({
       status: 'success',
-      data: { categories: cats.map((c) => c.category), owners, currentUserId: req.user?.userId ?? null, scopedDepartmentId: await scopedDepartment(req.user!.userId) },
+      data: { categories, divisions, owners, currentUserId: req.user?.userId ?? null, scopedDepartmentId: await scopedDepartment(req.user!.userId) },
       message: 'Form options retrieved successfully',
     });
   } catch (err) {
@@ -350,8 +365,7 @@ router.post('/', async (req, res) => {
         .returning(['id', 'code']);
       if (v.description) await trx('risk_description_versions').insert({ risk_id: row.id, body: v.description, edited_by: req.user!.userId });
       await trx.raw(`insert into risk_rating_snapshots (risk_id, month, rating) values (?, date_trunc('month', now())::date, ?)`, [row.id, v.impact * v.likelihood]);
-      const divisions = v.divisionIds.filter((d: string) => d !== v.departmentId);
-      if (divisions.length) await trx('risk_divisions').insert(divisions.map((d: string) => ({ risk_id: row.id, department_id: d })));
+      if (v.divisionIds.length) await trx('risk_divisions').insert(v.divisionIds.map((d: string) => ({ risk_id: row.id, division_id: d })));
       if (v.action) {
         await trx('mitigation_actions').insert({
           risk_id: row.id,
