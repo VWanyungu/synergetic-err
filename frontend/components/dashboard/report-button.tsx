@@ -43,7 +43,7 @@ export function ReportButton({ data, preparedBy }: { data: DashboardData; prepar
       className="flex h-[34px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-line-input bg-surface px-4 text-[13px] font-medium transition-[background-color,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-field active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
     >
       {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
-      Download report
+      {/* Download report */}
     </button>
   );
 }
