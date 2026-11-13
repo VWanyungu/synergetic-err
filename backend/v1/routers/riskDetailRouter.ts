@@ -3,7 +3,7 @@ import Joi from 'joi';
 import type { Knex } from 'knex';
 import db from '../database/dbSetup.js';
 import { sendRouteError } from '../utils/errors.js';
-import { uploadToCloudinary } from '../utils/cloudinary.js';
+import { uploadToCloudinary, isStorageConfigured } from '../utils/cloudinary.js';
 
 const router = express.Router();
 
@@ -434,7 +434,7 @@ router.post('/:id/attachments', async (req, res) => {
     );
     const buf = Buffer.from(b.data.replace(/^data:[^,]*,/, ''), 'base64');
     if (buf.length === 0 || buf.length > MAX_FILE) throw new HttpError(400, 'Files must be between 1 byte and 10 MB.');
-    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET)
+    if (!isStorageConfigured())
       throw new HttpError(503, 'File uploads are not configured yet.');
     const up = await uploadToCloudinary(buf, b.name, b.mimeType).catch(() => {
       throw new HttpError(502, 'The file could not be uploaded. Try again.');

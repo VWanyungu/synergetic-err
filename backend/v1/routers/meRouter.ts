@@ -2,7 +2,7 @@ import express from 'express';
 import Joi from 'joi';
 import db from '../database/dbSetup.js';
 import { sendRouteError } from '../utils/errors.js';
-import { uploadToCloudinary } from '../utils/cloudinary.js';
+import { uploadToCloudinary, isStorageConfigured } from '../utils/cloudinary.js';
 
 const router = express.Router();
 
@@ -58,7 +58,7 @@ router.put('/:kind', async (req, res) => {
     res.status(400).json({ status: 'error', data: null, message: 'Images must be between 1 byte and 5 MB.' });
     return;
   }
-  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  if (!isStorageConfigured()) {
     res.status(503).json({ status: 'error', data: null, message: 'File uploads are not configured yet.' });
     return;
   }
