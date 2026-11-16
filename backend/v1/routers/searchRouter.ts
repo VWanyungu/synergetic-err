@@ -36,7 +36,10 @@ router.get('/', async (req, res) => {
         .orderBy('r.rating', 'desc')
         .limit(limit)
         .select('r.id', 'r.title', db.raw(`concat(r.code, ' · ', d.name) as subtitle`)),
-      db('departments').whereILike('name', like).orderBy('name').limit(limit).select('id', 'name as title', db.raw(`'Department register' as subtitle`)),
+      Promise.all([
+        db('departments').whereILike('name', like).orderBy('name').limit(limit).select('id', 'name as title', db.raw(`'Department register' as subtitle`)),
+        db('divisions').whereILike('name', like).orderBy('name').limit(limit).select('id', 'name as title', db.raw(`'Division register' as subtitle`)),
+      ]).then(([depts, divs]) => [...depts, ...divs].slice(0, limit)),
       db('mitigation_actions as a')
         .join('risks as r', 'r.id', 'a.risk_id')
         .whereNull('r.archived_at')

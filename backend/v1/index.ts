@@ -17,6 +17,7 @@ import meRouter from './routers/meRouter.js';
 import avatarsRouter from './routers/avatarsRouter.js';
 import notificationsRouter from './routers/notificationsRouter.js';
 import departmentsRouter from './routers/departmentsRouter.js';
+import divisionsRouter from './routers/divisionsRouter.js';
 
 const router = express.Router();
 
@@ -42,6 +43,7 @@ router.use('/me', meRouter);
 router.use('/avatars', avatarsRouter);
 router.use('/notifications', notificationsRouter);
 router.use('/departments', departmentsRouter);
+router.use('/divisions', divisionsRouter);
 
 router.use('/logout', logoutRouter);
 
