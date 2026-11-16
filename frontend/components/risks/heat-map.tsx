@@ -31,14 +31,14 @@ export function HeatMap({
   const count = (c: Cell) => risks.filter((r) => r.likelihood === c.likelihood && r.impact === c.impact).length;
 
   return (
-    <div className="flex shrink-0 gap-3 self-start">
+    <div className="flex w-full shrink-0 gap-3 self-start sm:w-auto">
       <p className={cn(AXIS, "rotate-180 self-center")} style={{ writingMode: "vertical-rl" }}>
         Impact
       </p>
-      <div className="flex flex-col gap-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none">
         {[...SCALE].reverse().map((impact) => (
           <div key={impact} className="flex items-center gap-1">
-            <span className="w-5 text-[13px] font-medium leading-[1.4] text-ink-muted">{impact}</span>
+            <span className="w-5 shrink-0 text-[13px] font-medium leading-[1.4] text-ink-muted">{impact}</span>
             {SCALE.map((likelihood) => {
               const cell = { likelihood, impact };
               const n = count(cell);
@@ -55,7 +55,7 @@ export function HeatMap({
                   data-active={isSelected || (!!lit && n > 0)}
                   aria-label={`Likelihood ${likelihood}, impact ${impact}, rating ${likelihood * impact}: ${n} ${n === 1 ? "risk" : "risks"}`}
                   className={cn(
-                    "group flex h-[62px] w-[56px] flex-col overflow-hidden rounded-lg border-2 transition-[transform,border-color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                    "group flex h-[56px] min-w-0 flex-1 flex-col sm:h-[62px] sm:w-[56px] sm:flex-none overflow-hidden rounded-lg border-2 transition-[transform,border-color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
                     // Empty cells recede to a bare outline; only cells holding risks are coloured.
                     n === 0 ? "items-center justify-center border-line bg-transparent" : cn("border-transparent cursor-pointer hover:-translate-y-0.5 active:scale-[0.98]", LEVEL_STYLE[riskLevel(likelihood * impact)]),
                   )}
@@ -80,9 +80,9 @@ export function HeatMap({
           </div>
         ))}
         <div className="flex gap-1">
-          <span className="w-5" />
+          <span className="w-5 shrink-0" />
           {SCALE.map((l) => (
-            <span key={l} className="w-[56px] text-center text-[13px] font-medium leading-[1.4] text-ink-muted">
+            <span key={l} className="min-w-0 flex-1 text-center sm:w-[56px] sm:flex-none text-[13px] font-medium leading-[1.4] text-ink-muted">
               {l}
             </span>
           ))}

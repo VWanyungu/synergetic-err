@@ -1,0 +1,28 @@
+- generic [active] [ref=f7e1]:
+  - banner [ref=f7e2]:
+    - link [ref=f7e3] [cursor=pointer]:
+      - /url: /
+      - img "Synergetic" [ref=f7e4]
+    - navigation [ref=f7e5]:
+      - link "Dashboard" [ref=f7e6] [cursor=pointer]:
+        - /url: /
+      - link "Registers" [ref=f7e8] [cursor=pointer]:
+        - /url: /risks
+      - link "Heat map" [ref=f7e11] [cursor=pointer]:
+        - /url: /risks/distribution
+      - link "Reports" [ref=f7e12] [cursor=pointer]:
+        - /url: /reports
+    - generic [ref=f7e14]:
+      - textbox "Search risks, registers and mitigation plans" [ref=f7e18]:
+        - /placeholder: Search risks, IDs, owners
+      - generic [ref=f7e19]: ⌘K
+    - button "Toggle dark mode" [ref=f7e20] [cursor=pointer]
+    - link "Notifications" [ref=f7e30] [cursor=pointer]:
+      - /url: /notifications
+    - link "New risk" [ref=f7e35] [cursor=pointer]:
+      - /url: /risks/new
+    - button "Account menu" [ref=f7e38] [cursor=pointer]: AD
+  - main [ref=f7e39]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f7e46] [cursor=pointer]
+  - alert [ref=f7e50]

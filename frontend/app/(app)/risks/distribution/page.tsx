@@ -38,7 +38,7 @@ export default function RiskDistributionPage() {
   return (
     <div className="flex flex-col gap-7">
       <header className="flex flex-col gap-1.5">
-        <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">Risk distribution</h1>
+        <h1 className="text-[26px] sm:text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">Risk distribution</h1>
         {department && (
           <p className="text-[15px] leading-[1.6] text-ink-muted">
             {all.length} {all.length === 1 ? "risk" : "risks"} in {department.name}
@@ -46,8 +46,8 @@ export default function RiskDistributionPage() {
         )}
       </header>
 
-      <div className="flex h-9 items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
         <Dropdown
           label="Department:"
           selectedId={departmentId}
@@ -62,7 +62,7 @@ export default function RiskDistributionPage() {
         </div>
         {((!own && departmentId) || cell || month || rating) && (
           <button
-            className="cursor-pointer text-[14px] font-medium text-brand hover:underline"
+            className="cursor-pointer self-start text-[14px] font-medium text-brand hover:underline"
             onClick={() => {
               setDepartmentId("");
               setMonth("");

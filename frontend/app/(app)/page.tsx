@@ -43,12 +43,12 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="flex items-center gap-3 text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">
+      <header className="flex flex-col gap-4 pb-2 sm:pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="flex items-center gap-3 text-[26px] sm:text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">
           {greeting()}, {data?.firstName}
           <Smile className="size-8 shrink-0" strokeWidth={1.5} aria-hidden />
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Dropdown
             label="Department:"
             align="right"
@@ -77,7 +77,7 @@ export default function DashboardPage() {
             <BreakdownCard data={data.breakdown} categoryOnly={data.scoped} departmentId={data.departmentId} />
             <LevelFlow levels={data.levels} href="/risks/distribution" />
           </div>
-          <Card coreClassName="gap-4 px-6 py-5">
+          <Card coreClassName="gap-4 px-4 py-5 sm:px-6">
             <div className="flex items-center justify-between">
               <h2 className="text-[14px] font-medium leading-[1.4]">Highest rated risks</h2>
               <Link href={`/risks/register/${data.departmentId || "all"}`} className="flex items-center gap-1 text-[13px] leading-normal text-ink-muted hover:text-ink">

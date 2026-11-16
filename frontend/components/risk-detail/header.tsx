@@ -85,7 +85,7 @@ export function RiskHeader({ risk, tab, onTab, banner }: { risk: RiskDetail; tab
       {editing ? (
         <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={255} autoFocus onKeyDown={(e) => e.key === "Enter" && title.trim() && title.trim() !== risk.title && save()} />
       ) : (
-        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[26px] sm:text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">
           <span className="[overflow-wrap:anywhere]">{risk.title}</span>
           <span className="font-light text-ink-muted/70">{risk.code}</span>
           {risk.can.edit && (
@@ -94,7 +94,7 @@ export function RiskHeader({ risk, tab, onTab, banner }: { risk: RiskDetail; tab
         </h1>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <Pill risk={risk} />
         {risk.transfer && <TransferHistory risk={risk} />}
         <p className="min-w-0 flex-1 text-[14px] leading-normal text-ink-muted">
@@ -105,9 +105,9 @@ export function RiskHeader({ risk, tab, onTab, banner }: { risk: RiskDetail; tab
         {editing && <SaveCancel busy={patch.isPending} disabled={!title.trim() || title.trim() === risk.title} onSave={save} onCancel={() => setEditing(false)} />}
       </div>
 
-      <div role="tablist" className="mt-3 flex gap-7 border-b border-line">
+      <div role="tablist" className="mt-3 flex gap-5 overflow-x-auto border-b border-line [scrollbar-width:none] sm:gap-7 [&::-webkit-scrollbar]:hidden">
         {tabs.map(([id, label, count]) => (
-          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => onTab(id)} className={cn("-mb-px flex cursor-pointer items-center gap-2 border-b-2 py-3 text-[14px] font-medium", tab === id ? "border-brand text-ink" : "border-transparent text-ink-muted hover:text-ink")}>
+          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => onTab(id)} className={cn("-mb-px flex shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap border-b-2 py-3 text-[14px] font-medium", tab === id ? "border-brand text-ink" : "border-transparent text-ink-muted hover:text-ink")}>
             {label}
             {count !== undefined && <span className="rounded-full bg-field px-2 py-0.5 text-[12px] leading-none text-ink-muted">{count}</span>}
           </button>

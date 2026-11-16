@@ -180,7 +180,7 @@ export function RegisterPage({ mode, id }: { mode: "department" | "division"; id
             }
           />
           {data && data.total > 0 && (
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[14px] leading-normal text-ink-muted">{summary}</p>
               <div className="flex gap-2">
                 <button type="button" className="btn-secondary btn-auto" disabled={filters.page <= 1} onClick={() => setState((f) => ({ ...f, page: f.page - 1 }))}>

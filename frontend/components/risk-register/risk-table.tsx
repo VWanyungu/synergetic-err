@@ -17,6 +17,7 @@ import { useRiskFormOptions } from "@/hooks/queries/use-create-risk";
 import { Avatar } from "@/components/risk-detail/ui";
 import { RisksSkeleton } from "@/components/risks/risks-empty";
 import { LEVEL_TEXT, riskLevel, type MitigationAction, type RatingBand, type RegisterData, type RegisterRisk } from "@/lib/risk";
+import { SHEET } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 const COL = {
@@ -113,16 +114,16 @@ function Header({
   const nextRating = ratingSort === null ? "rating_asc" : ratingSort === "asc" ? "rating_desc" : "latest";
 
   return (
-    <div ref={ref} className="flex items-center gap-3 border-b border-line pb-3">
-      <span className="w-6 shrink-0" />
-      <div className={cn(HEAD, "flex h-7 flex-1 items-center text-ink-muted")}>Risk</div>
-      <div className={cn("relative flex h-7 items-center", COL.department)}>
+    <div ref={ref} className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-line pb-3 sm:flex-nowrap sm:gap-3">
+      <span className="hidden w-6 shrink-0 sm:block" />
+      <div className={cn(HEAD, "hidden h-7 flex-1 items-center text-ink-muted sm:flex")}>Risk</div>
+      <div className={cn("relative flex h-7 items-center sm:hidden lg:flex lg:w-[130px] lg:shrink-0")}>
         <button type="button" onClick={() => toggle("department")} className={cell(!!filters.departmentId, open === "department")}>
           Department
           {caret(open === "department")}
         </button>
         {open === "department" && (
-          <div className="absolute left-0 top-full z-30 mt-2 w-[260px] rounded-2xl border border-line bg-surface p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]" role="dialog">
+          <div className={cn(SHEET, "absolute left-0 top-full z-30 mt-2 w-[260px] rounded-2xl border border-line bg-surface p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]")} role="dialog">
             <DropdownList
               selectedId={filters.departmentId}
               items={[...(scoped ? [] : [{ id: "", name: "All departments" }]), ...departmentItems.map((r) => ({ id: r.id, name: r.name }))]}
@@ -151,14 +152,14 @@ function Header({
           />
         )}
       </div>
-      <div className={cn("relative flex h-7 items-center", COL.owner)}>
+      <div className={cn("relative flex h-7 items-center sm:hidden md:flex md:w-[140px] md:shrink-0")}>
         <button type="button" onClick={() => toggle("owner")} className={cell(!!filters.ownerId, open === "owner")}>
           Owner
           {caret(open === "owner")}
         </button>
         {open === "owner" && (
           // The option list itself, straight under the header, with no card or trigger around it.
-          <div className="absolute left-0 top-full z-30 mt-2 w-[240px] rounded-2xl border border-line bg-surface p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]" role="dialog">
+          <div className={cn(SHEET, "absolute left-0 top-full z-30 mt-2 w-[240px] rounded-2xl border border-line bg-surface p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]")} role="dialog">
             <DropdownList
               selectedId={filters.ownerId}
               items={[{ id: "", name: "All owners" }, ...(owners.data?.owners ?? [])]}
@@ -167,7 +168,7 @@ function Header({
           </div>
         )}
       </div>
-      <div className={cn("relative flex h-7 items-center", COL.status)}>
+      <div className={cn("relative flex h-7 items-center sm:w-[100px] sm:shrink-0")}>
         <button type="button" onClick={() => toggle("status")} className={cell(statusFiltered(filters.status), open === "status")}>
           Status
           {caret(open === "status")}
@@ -185,7 +186,7 @@ function Header({
           />
         )}
       </div>
-      <div className={cn("relative flex h-7 items-center", COL.date)}>
+      <div className={cn("relative flex h-7 items-center sm:hidden lg:flex lg:w-[100px] lg:shrink-0")}>
         <button type="button" onClick={() => toggle("review")} className={cell(filters.reviewState.length === 1, open === "review")}>
           Last review
           {caret(open === "review")}
@@ -237,7 +238,7 @@ function Panel({ risk, compact }: { risk: RegisterRisk; compact?: boolean }) {
   return (
     <div className="border-b border-line pb-4">
       <div className="rounded-md bg-subtle pb-0.5 pt-3.5">
-        <div className="flex flex-wrap gap-x-14 gap-y-4 border-b border-line pb-4 pl-9 pr-6">
+        <div className="flex flex-wrap gap-x-14 gap-y-4 border-b border-line pb-4 pl-4 pr-4 sm:pl-9 sm:pr-6">
           <div className="flex flex-col gap-2">
             <span className={cn(HEAD, "text-ink-muted")}>Risk ID</span>
             <span className="font-mono text-[13px] leading-normal">{risk.code}</span>
@@ -278,16 +279,19 @@ function Panel({ risk, compact }: { risk: RegisterRisk; compact?: boolean }) {
         {actions.isPending ? (
           <div className="h-[47px] animate-pulse border-t border-line" />
         ) : actions.isError ? (
-          <p className="px-9 py-3 text-[14px] text-danger-fg">{actions.error.message}</p>
+          <p className="px-4 py-3 text-[14px] text-danger-fg sm:px-9">{actions.error.message}</p>
         ) : actions.data.length === 0 ? (
-          <p className="border-t border-line px-9 py-3 text-[14px] text-ink-muted">No mitigation actions yet.</p>
+          <p className="border-t border-line px-4 py-3 text-[14px] text-ink-muted sm:px-9">No mitigation actions yet.</p>
         ) : (
           actions.data.map((a: MitigationAction) => {
             const overdue = !!a.dueDate && a.status !== "completed" && a.dueDate < today;
             return (
               <div key={a.id} className="flex items-center gap-3 border-t border-line py-3 first:border-t-0 [&:not(:first-of-type)]:border-t">
                 <span className="w-6 shrink-0" />
-                <span className="min-w-0 flex-1 text-[14px] font-medium leading-[1.4]">{a.title}</span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[14px] font-medium leading-[1.4]">{a.title}</span>
+                  <span className="text-[13px] leading-normal text-ink-muted sm:hidden">{ACTION_STATUS[a.status].label}{a.dueDate ? ` · due ${fmt(a.dueDate)}` : ""}</span>
+                </span>
                 {!compact && (
                   <>
                     <span className="hidden w-[130px] shrink-0 lg:block" />
@@ -332,6 +336,7 @@ export function Row({ risk, expanded, onToggle, compact }: { risk: RegisterRisk;
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <Link href={`/risks/${risk.id}`} className="text-[14px] font-medium leading-[1.4] hover:text-brand hover:underline">{risk.title}</Link>
           <span className="text-[13px] leading-normal text-ink-muted">{risk.category}</span>
+          <span className="truncate text-[13px] leading-normal text-ink-muted sm:hidden">{risk.department} · {risk.owner ?? "Unassigned"}</span>
         </span>
         <span className={cn("items-center text-[14px] leading-normal", COL.department)}>{risk.department}</span>
         <span className={cn("flex items-center text-[15px] font-medium leading-[1.6]", COL.rating, LEVEL_TEXT[riskLevel(risk.rating)])}>

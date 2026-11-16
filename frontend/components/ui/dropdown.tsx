@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { useOutsideClick } from "@/hooks/use-outside-click";
+import { SHEET } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 export interface DropdownItem {
@@ -67,7 +68,7 @@ export function Dropdown({
   return (
     <div
       ref={ref}
-      className="relative w-max"
+      className="relative w-max max-w-full"
       onKeyDown={(e) => e.key === "Escape" && close()}
     >
       <button
@@ -75,15 +76,15 @@ export function Dropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => (open ? close() : setOpen(true))}
-        className="flex w-max cursor-pointer items-center gap-3 rounded-full border border-line-input bg-surface py-1.5 pl-4 pr-3 text-[13px]"
+        className="flex w-max max-w-full cursor-pointer items-center gap-2 rounded-full border border-line-input bg-surface py-1.5 pl-3 pr-2 text-[13px] sm:gap-3 sm:pl-4 sm:pr-3"
       >
-        {label && <span className="border-r border-line-input pr-3 text-ink-muted">{label.replace(/:$/, "")}</span>}
-        <span className="whitespace-nowrap font-medium leading-[1.4]">{selected?.name ?? ""}</span>
-        <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
+        {label && <span className="shrink-0 border-r border-line-input pr-2 text-ink-muted sm:pr-3">{label.replace(/:$/, "")}</span>}
+        <span className="truncate whitespace-nowrap font-medium leading-[1.4]">{selected?.name ?? ""}</span>
+        <ChevronDown className={cn("size-4 shrink-0 transition-transform", open && "rotate-180")} />
       </button>
 
       {open && (
-        <div className={cn("absolute top-full z-20 mt-2 w-max min-w-full rounded-2xl border border-line bg-surface p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]", align === "right" ? "right-0" : "left-0")}>
+        <div className={cn(SHEET, "absolute top-full z-20 mt-2 w-max min-w-full rounded-2xl border border-line bg-surface p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]", align === "right" ? "right-0" : "left-0")}>
           <DropdownList items={items} selectedId={selectedId} onSelect={(id) => { onSelect(id); close(); }} />
         </div>
       )}

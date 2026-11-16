@@ -1,0 +1,32 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Enterprise Risk Register",
+  "colors": { "primary": "#1f6b3a", "light": "#4c9a62", "dark": "#14522a" },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          { "group": "Get started", "pages": ["index", "quickstart"] },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/dashboard",
+              "guides/risk-registers",
+              "guides/creating-a-risk",
+              "guides/risk-detail",
+              "guides/heat-map",
+              "guides/reports",
+              "guides/notifications",
+              "guides/administration",
+              "guides/profile"
+            ]
+          },
+          { "group": "Concepts", "pages": ["scoring"] },
+          { "group": "Help", "pages": ["faq"] }
+        ]
+      }
+    ]
+  }
+}

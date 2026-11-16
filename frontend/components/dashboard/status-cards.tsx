@@ -23,13 +23,13 @@ function StatusCard({
   return (
     <Card className="min-w-0 flex-1" coreClassName="gap-5">
       <p className={OVERLINE}>{title}</p>
-      <div className="flex items-center gap-6">
-        <div className="flex w-[136px] shrink-0 flex-col gap-1">
+      <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
+        <div className="flex shrink-0 flex-col gap-1 sm:w-[136px]">
           <p className="text-[44px] font-semibold leading-none tracking-[-1.32px]">{hero}</p>
           <p className="text-[13px] leading-normal text-ink-muted">{caption}</p>
         </div>
-        <span className="h-14 w-px shrink-0 bg-line" aria-hidden />
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <span className="hidden h-14 w-px shrink-0 bg-line sm:block" aria-hidden />
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
           <div className="flex gap-10">
             {stats.map((s) => (
               <div key={s.label} className="flex flex-col gap-1">
@@ -45,7 +45,7 @@ function StatusCard({
             {sum === 0 ? <span className="h-full flex-1 rounded-full bg-line-input" /> : stats.map((s) => (s.value ? <span key={s.label} className={cn("h-full rounded-full", s.dot)} style={{ flexGrow: s.value, flexBasis: 0 }} /> : null))}
           </div>
         </div>
-        <Link href={href} aria-label={`Open ${title}`} className="flex size-7 shrink-0 items-center justify-center rounded-full border border-line bg-subtle hover:bg-field">
+        <Link href={href} aria-label={`Open ${title}`} className="absolute right-0 top-0 flex size-9 shrink-0 items-center justify-center rounded-full border border-line bg-subtle hover:bg-field sm:static sm:size-7">
           <ChevronRight className="size-2.5" aria-hidden />
         </Link>
       </div>
@@ -59,7 +59,7 @@ export function StatusCards({ data }: { data: DashboardData }) {
   const register = `/risks/register/${data.departmentId || "all"}`;
   const n = (c: number) => `of ${c} ${c === 1 ? "risk" : "risks"}`;
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
+    <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row">
       <StatusCard
         title="Review compliance"
         href={`${register}?status=all&review=reviewed`}

@@ -74,7 +74,7 @@ export default function ReportPage() {
         </nav>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">Risk Report, {period}</h1>
+            <h1 className="text-[26px] font-semibold sm:text-[32px] leading-[1.15] tracking-[-0.96px]">Risk Report, {period}</h1>
             <p className="text-[15px] leading-[1.6] text-ink-muted">{report.data ? (report.data.departmentId ? (report.data.departments.find((d) => d.id === report.data.departmentId)?.name ?? "Department") : "All departments") : " "}</p>
           </div>
           <div className="flex items-center gap-2">

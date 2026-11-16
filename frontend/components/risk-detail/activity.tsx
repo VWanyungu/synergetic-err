@@ -96,7 +96,7 @@ function HistoryMenu({ riskId, commentId, text, noun }: { riskId: string; commen
         <ChevronDown className="size-3.5" />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-20 mt-10 w-[360px] rounded-[18px] border border-line bg-subtle p-[5px] shadow-[0_1px_3px_rgba(17,17,17,0.04),0_8px_24px_rgba(17,17,17,0.05)]">
+        <div role="menu" className="absolute right-0 top-full z-20 mt-10 w-[min(360px,calc(100vw-2rem))] rounded-[18px] border border-line bg-subtle p-[5px] shadow-[0_1px_3px_rgba(17,17,17,0.04),0_8px_24px_rgba(17,17,17,0.05)]">
           <div className="flex flex-col gap-0.5 rounded-[13px] border border-line bg-surface p-1.5">
             <p className="py-1.5 pl-2.5 text-[13px] leading-normal text-ink-muted">{q.isPending ? "Loading…" : `Edited ${Math.max(versions.length - 1, 0)} ${versions.length === 2 ? "time" : "times"}`}</p>
             {q.isError && <p className="px-2.5 py-1.5 text-[13px] text-danger-fg">Could not load the history.</p>}

@@ -97,7 +97,7 @@ export function UserPanel({ user, actorIsAdmin, isSelf, onClose }: { user: UserR
 
   return (
     <aside aria-label={creating ? "New user" : "User details"} className="animate-fade-up flex min-w-0 flex-col self-start">
-      <header className="flex items-center justify-between gap-3 border-b border-line px-6 py-4">
+      <header className="flex items-center justify-between gap-3 border-b border-line px-1 py-4 lg:px-6">
         {creating ? (
           <h2 className="text-[16px] font-semibold leading-[1.4] tracking-[-0.16px]">New user</h2>
         ) : (
@@ -114,7 +114,7 @@ export function UserPanel({ user, actorIsAdmin, isSelf, onClose }: { user: UserR
         </button>
       </header>
 
-      <div className="flex flex-col gap-6 px-6 py-5">
+      <div className="flex flex-col gap-6 px-1 py-5 lg:px-6">
         {locked && <p className="rounded-lg bg-subtle px-3 py-2 text-[13px] leading-normal text-ink-muted">This is an Admin account. Only an Admin can change it.</p>}
 
         <section className="flex flex-col gap-3" aria-label="Details">
@@ -201,7 +201,7 @@ export function UserPanel({ user, actorIsAdmin, isSelf, onClose }: { user: UserR
         )}
       </div>
 
-      <footer className="flex justify-end gap-3 px-6 py-4">
+      <footer className="flex justify-end gap-3 px-1 py-4 lg:px-6">
         <button type="button" onClick={onClose} className="btn-secondary btn-auto">{creating ? "Cancel" : "Close"}</button>
         <button type="button" disabled={locked || !dirty || invalid || busy} onClick={save} className="btn-primary btn-auto">
           {busy && <LoaderCircle className="size-4 animate-spin" />}

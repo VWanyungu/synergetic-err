@@ -46,7 +46,7 @@ export function BreakdownCard({ data, className, categoryOnly, departmentId }: {
 
   return (
     <Card className={className} coreClassName="gap-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-[14px] font-medium leading-[1.4]">Risk breakdown</h2>
         <div className="flex gap-1" role="group" aria-label="Group by">
           {tabs.map((t) => (
@@ -55,7 +55,7 @@ export function BreakdownCard({ data, className, categoryOnly, departmentId }: {
               type="button"
               aria-pressed={tab === t.id}
               onClick={() => setTab(t.id)}
-              className={cn("h-[30px] cursor-pointer rounded-full px-3 text-[13px] font-medium transition-colors duration-300", tab === t.id ? "bg-field text-ink" : "text-ink-muted hover:bg-field/60")}
+              className={cn("h-9 cursor-pointer rounded-full px-3 sm:h-[30px] text-[13px] font-medium transition-colors duration-300", tab === t.id ? "bg-field text-ink" : "text-ink-muted hover:bg-field/60")}
             >
               {t.label}
             </button>

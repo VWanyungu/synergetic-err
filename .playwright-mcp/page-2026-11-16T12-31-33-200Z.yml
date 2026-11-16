@@ -1,0 +1,224 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e34]:
+    - link [ref=e35] [cursor=pointer]:
+      - /url: /
+      - img "Synergetic" [ref=e36]
+    - navigation [ref=e37]:
+      - link "Dashboard" [ref=e38] [cursor=pointer]:
+        - /url: /
+      - link "Registers" [ref=e40] [cursor=pointer]:
+        - /url: /risks
+      - link "Heat map" [ref=e43] [cursor=pointer]:
+        - /url: /risks/distribution
+      - link "Reports" [ref=e44] [cursor=pointer]:
+        - /url: /reports
+      - link "Admin" [ref=e45] [cursor=pointer]:
+        - /url: /admin
+    - generic [ref=e47]:
+      - textbox "Search risks, registers and mitigation plans" [ref=e51]:
+        - /placeholder: Search risks, IDs, owners
+      - generic [ref=e52]: ⌘K
+    - button "Toggle dark mode" [ref=e53] [cursor=pointer]
+    - link "Notifications" [ref=e63] [cursor=pointer]:
+      - /url: /notifications
+    - link "New risk" [ref=e68] [cursor=pointer]:
+      - /url: /risks/new
+    - button "Account menu" [ref=e71] [cursor=pointer]
+  - main [ref=e72]:
+    - generic [ref=e73]:
+      - generic [ref=e74]:
+        - heading "Good afternoon, Victor" [level=1] [ref=e75]
+        - generic [ref=e79]:
+          - button "Department All departments" [ref=e81] [cursor=pointer]:
+            - generic [ref=e82]: Department
+            - generic [ref=e83]: All departments
+          - button "Period Nov 2026" [ref=e87] [cursor=pointer]:
+            - generic [ref=e88]: Period
+            - generic [ref=e89]: Nov 2026
+          - button [ref=e92] [cursor=pointer]
+      - generic [ref=e96]:
+        - generic [ref=e98]:
+          - paragraph [ref=e99]: Review compliance
+          - generic [ref=e100]:
+            - generic [ref=e101]:
+              - paragraph [ref=e102]: 12%
+              - paragraph [ref=e103]: of 49 risks reviewed
+            - generic [ref=e105]:
+              - generic [ref=e106]:
+                - generic [ref=e107]:
+                  - generic [ref=e108]: Reviewed
+                  - generic [ref=e110]: "6"
+                - generic [ref=e111]:
+                  - generic [ref=e112]: Pending
+                  - generic [ref=e114]: "43"
+              - img "Reviewed 6, Pending 43" [ref=e115]
+            - link "Open Review compliance" [ref=e118] [cursor=pointer]:
+              - /url: /risks/register/all?status=all&review=reviewed
+        - generic [ref=e122]:
+          - paragraph [ref=e123]: Mitigation coverage
+          - generic [ref=e124]:
+            - generic [ref=e125]:
+              - paragraph [ref=e126]: 76%
+              - paragraph [ref=e127]: of 49 risks covered
+            - generic [ref=e129]:
+              - generic [ref=e130]:
+                - generic [ref=e131]:
+                  - generic [ref=e132]: With plan
+                  - generic [ref=e134]: "37"
+                - generic [ref=e135]:
+                  - generic [ref=e136]: No plan
+                  - generic [ref=e138]: "12"
+              - img "With plan 37, No plan 12" [ref=e139]
+            - link "Open Mitigation coverage" [ref=e142] [cursor=pointer]:
+              - /url: /risks/register/all?status=all&quick=noMitigation
+      - generic [ref=e145]:
+        - generic [ref=e147]:
+          - generic [ref=e148]:
+            - heading "Risk breakdown" [level=2] [ref=e149]
+            - group "Group by" [ref=e150]:
+              - button "Department" [pressed] [ref=e151] [cursor=pointer]
+              - button "Category" [ref=e152] [cursor=pointer]
+              - button "Division" [ref=e153] [cursor=pointer]
+          - generic [ref=e154]:
+            - generic [ref=e155]: Department
+            - generic [ref=e156]: Level split
+            - generic [ref=e157]: Risks
+          - generic [ref=e158]:
+            - link "IT 1 high, 5 medium, 2 low 8" [ref=e159] [cursor=pointer]:
+              - /url: /risks/register/b1d33469-5862-40d3-ba03-4659d443d5ca?status=all
+              - generic "IT" [ref=e160]
+              - img "1 high, 5 medium, 2 low" [ref=e161]
+              - generic [ref=e165]: "8"
+            - link "Projects 1 high, 4 medium, 2 low 7" [ref=e166] [cursor=pointer]:
+              - /url: /risks/register/b1952ef3-b4c7-447b-b00b-eb0614c8de5d?status=all
+              - generic "Projects" [ref=e167]
+              - img "1 high, 4 medium, 2 low" [ref=e168]
+              - generic [ref=e172]: "7"
+            - link "Commercial 0 high, 6 medium, 0 low 6" [ref=e173] [cursor=pointer]:
+              - /url: /risks/register/78a5cc8c-4593-49bb-a592-2cd7acd80dbf?status=all
+              - generic "Commercial" [ref=e174]
+              - img "0 high, 6 medium, 0 low" [ref=e175]
+              - generic [ref=e177]: "6"
+            - link "HSSE 0 high, 4 medium, 2 low 6" [ref=e178] [cursor=pointer]:
+              - /url: /risks/register/5edafb95-206c-4353-b306-247424fff8f3?status=all
+              - generic "HSSE" [ref=e179]
+              - img "0 high, 4 medium, 2 low" [ref=e180]
+              - generic [ref=e183]: "6"
+            - link "Legal 2 high, 0 medium, 4 low 6" [ref=e184] [cursor=pointer]:
+              - /url: /risks/register/2c41859d-e098-4009-b56b-ef9f0c31d03d?status=all
+              - generic "Legal" [ref=e185]
+              - img "2 high, 0 medium, 4 low" [ref=e186]
+              - generic [ref=e189]: "6"
+            - link "People - Talent, Licences, Labour, Welfare 2 high, 2 medium, 2 low 6" [ref=e190] [cursor=pointer]:
+              - /url: /risks/register/58174763-768b-4817-92c8-f5d491f3fe81?status=all
+              - generic "People - Talent, Licences, Labour, Welfare" [ref=e191]
+              - img "2 high, 2 medium, 2 low" [ref=e192]
+              - generic [ref=e196]: "6"
+            - link "Finance 1 high, 3 medium, 1 low 5" [ref=e197] [cursor=pointer]:
+              - /url: /risks/register/04138a1f-ca48-40cc-a488-921619d9f24d?status=all
+              - generic "Finance" [ref=e198]
+              - img "1 high, 3 medium, 1 low" [ref=e199]
+              - generic [ref=e203]: "5"
+            - link "Supply Chain 1 high, 2 medium, 2 low 5" [ref=e204] [cursor=pointer]:
+              - /url: /risks/register/86cb510b-1302-4bfd-9adf-066213223f12?status=all
+              - generic "Supply Chain" [ref=e205]
+              - img "1 high, 2 medium, 2 low" [ref=e206]
+              - generic [ref=e210]: "5"
+        - generic [ref=e212]:
+          - heading "Risk level distribution" [level=2] [ref=e213]
+          - generic [ref=e214]:
+            - generic [ref=e223]:
+              - generic [ref=e224]: Total risks
+              - generic [ref=e225]: "49"
+            - generic [ref=e226]:
+              - generic [ref=e227]: HIGH
+              - generic [ref=e228]: 8 risks
+              - generic [ref=e229]: 16% of total
+            - generic [ref=e230]:
+              - generic [ref=e231]: MEDIUM
+              - generic [ref=e232]: 26 risks
+              - generic [ref=e233]: 53% of total
+            - generic [ref=e234]:
+              - generic [ref=e235]: LOW
+              - generic [ref=e236]: 15 risks
+              - generic [ref=e237]: 31% of total
+          - link "View details" [ref=e238] [cursor=pointer]:
+            - /url: /risks/distribution
+      - generic [ref=e242]:
+        - generic [ref=e243]:
+          - heading "Highest rated risks" [level=2] [ref=e244]
+          - link "View all" [ref=e245] [cursor=pointer]:
+            - /url: /risks/register/all
+        - generic [ref=e248]:
+          - generic [ref=e249]:
+            - generic [ref=e250]: Risk
+            - button "Department" [ref=e252] [cursor=pointer]
+            - generic [ref=e255]:
+              - button "Filter by rating" [ref=e256] [cursor=pointer]: Rating
+              - button "Sort by rating, currently desc" [ref=e257] [cursor=pointer]
+            - button "Owner" [ref=e261] [cursor=pointer]
+            - button "Status" [ref=e265] [cursor=pointer]
+            - button "Last review" [ref=e269] [cursor=pointer]
+          - button "Forex currency volatility on foreign capital expenditure Financial Finance 20 FC Faith Chebet Active 14 Aug 2026" [ref=e272] [cursor=pointer]:
+            - generic [ref=e276]:
+              - link "Forex currency volatility on foreign capital expenditure" [ref=e277]:
+                - /url: /risks/8996ac8c-10b3-429c-a000-eba74b0c0c19
+              - generic [ref=e278]: Financial
+            - generic [ref=e279]: Finance
+            - generic [ref=e280]: "20"
+            - generic [ref=e281]:
+              - generic "Faith Chebet" [ref=e282]: FC
+              - generic [ref=e283]: Faith Chebet
+            - generic [ref=e284]: Active
+            - generic [ref=e289]: 14 Aug 2026
+          - button "Engineering talent turnover and key person dependency People & Human Capital People - Talent, Licences, Labour, Welfare 16 FW Fidelis Wanalwenge Active 06 Nov 2026" [ref=e290] [cursor=pointer]:
+            - generic [ref=e294]:
+              - link "Engineering talent turnover and key person dependency" [ref=e295]:
+                - /url: /risks/ba97dd44-015f-406a-8ec9-d84e2e71c0da
+              - generic [ref=e296]: People & Human Capital
+            - generic [ref=e297]: People - Talent, Licences, Labour, Welfare
+            - generic [ref=e298]: "16"
+            - generic [ref=e299]:
+              - generic "Fidelis Wanalwenge" [ref=e300]: FW
+              - generic [ref=e301]: Fidelis Wanalwenge
+            - generic [ref=e302]: Active
+            - generic [ref=e307]: 06 Nov 2026
+          - button "Single supplier dependency for critical turbine spare parts Supply Chain & Procurement Supply Chain 16 KM Kevin Mutua Active 25 Sep 2026" [ref=e308] [cursor=pointer]:
+            - generic [ref=e312]:
+              - link "Single supplier dependency for critical turbine spare parts" [ref=e313]:
+                - /url: /risks/f150184f-c17d-4197-8207-94c97faa795a
+              - generic [ref=e314]: Supply Chain & Procurement
+            - generic [ref=e315]: Supply Chain
+            - generic [ref=e316]: "16"
+            - generic [ref=e317]:
+              - generic "Kevin Mutua" [ref=e318]: KM
+              - generic [ref=e319]: Kevin Mutua
+            - generic [ref=e320]: Active
+            - generic [ref=e325]: 25 Sep 2026
+          - button "Tender documents shared over personal email without encryption Compliance & Legal Legal 16 KM Kevin Mutua Active 25 Sep 2026" [ref=e326] [cursor=pointer]:
+            - generic [ref=e330]:
+              - link "Tender documents shared over personal email without encryption" [ref=e331]:
+                - /url: /risks/b558e7ce-beec-4ac0-a181-9ca1cb834e0a
+              - generic [ref=e332]: Compliance & Legal
+            - generic [ref=e333]: Legal
+            - generic [ref=e334]: "16"
+            - generic [ref=e335]:
+              - generic "Kevin Mutua" [ref=e336]: KM
+              - generic [ref=e337]: Kevin Mutua
+            - generic [ref=e338]: Active
+            - generic [ref=e343]: 25 Sep 2026
+          - button "Unpatched ERP servers exposed to ransomware Technology & Cybersecurity IT 16 Wanjiru Otieno Wanjiru Otieno Active 03 Nov 2026" [ref=e344] [cursor=pointer]:
+            - generic [ref=e348]:
+              - link "Unpatched ERP servers exposed to ransomware" [ref=e349]:
+                - /url: /risks/4ac1c373-ad06-4b03-866b-324194bbc098
+              - generic [ref=e350]: Technology & Cybersecurity
+            - generic [ref=e351]: IT
+            - generic [ref=e352]: "16"
+            - generic [ref=e353]:
+              - generic "Wanjiru Otieno" [ref=e354]
+              - generic [ref=e355]: Wanjiru Otieno
+            - generic [ref=e356]: Active
+            - generic [ref=e361]: 03 Nov 2026
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e30] [cursor=pointer]
+  - alert [ref=e362]
