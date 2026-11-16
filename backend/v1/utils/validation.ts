@@ -39,6 +39,7 @@ export const adminCreateUserSchema = Joi.object<AdminCreateUserInput>({
 export const updateUserSchema = Joi.object<UpdateUserInput>({
   firstName: Joi.string().trim().min(1).max(50).optional(),
   lastName: Joi.string().trim().min(1).max(50).optional(),
+  email: Joi.string().email().lowercase().optional(),
   phone: Joi.string().trim().max(30).allow(null, '').optional(),
   globalRole: roleNameField.allow(null).optional(),
   departmentId: Joi.string().uuid().allow(null).optional(),

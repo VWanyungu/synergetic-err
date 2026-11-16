@@ -42,6 +42,7 @@ export const useUsers = (f: UserFilters) => {
 };
 
 export interface UserUpdate {
+  email?: string;
   firstName?: string;
   lastName?: string;
   phone?: string | null;

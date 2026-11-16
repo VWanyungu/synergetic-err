@@ -42,6 +42,7 @@ export interface UserDetail {
 }
 
 export interface UpdateUserInput {
+  email?: string;
   firstName?: string;
   lastName?: string;
   phone?: string | null;
@@ -188,6 +189,7 @@ export class Users {
 
   static async updateUser(id: string, input: UpdateUserInput, actorId: string): Promise<UserDetail | null> {
     const patch: Record<string, unknown> = {};
+    if (input.email !== undefined) patch.email = input.email;
     if (input.firstName !== undefined) patch.first_name = input.firstName;
     if (input.lastName !== undefined) patch.last_name = input.lastName;
     if (input.phone !== undefined) patch.phone_number = input.phone;

@@ -39,7 +39,7 @@ export function UserPanel({ user, actorIsAdmin, isSelf, onClose }: { user: UserR
 
   const [first, setFirst] = useState(user?.first_name ?? "");
   const [last, setLast] = useState(user?.last_name ?? "");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState(user?.phone_number ?? "");
   const [department, setDepartment] = useState(user?.department_id ?? "");
   const [division, setDivision] = useState(user?.division_id ?? "");
@@ -60,19 +60,20 @@ export function UserPanel({ user, actorIsAdmin, isSelf, onClose }: { user: UserR
   const needsDepartment = DEPARTMENT_ROLES.includes(role) && !department;
   const needsDivision = isDivisionLead && !division;
   const roleChanged = !creating && role !== (user.global_role ?? NO_ROLE);
+  const emailChanged = !creating && email.trim().toLowerCase() !== user.email.toLowerCase();
   const scopeChanged = !creating && (department !== (user.department_id ?? "") || division !== (user.division_id ?? ""));
   const dirty = creating
     ? !!first.trim() && !!last.trim() && !!email.trim()
-    : first.trim() !== user.first_name || last.trim() !== user.last_name || phone.trim() !== (user.phone_number ?? "") || roleChanged || scopeChanged;
-  const invalid = !first.trim() || !last.trim() || (creating && !email.trim()) || needsDepartment || needsDivision;
+    : first.trim() !== user.first_name || last.trim() !== user.last_name || phone.trim() !== (user.phone_number ?? "") || emailChanged || roleChanged || scopeChanged;
+  const invalid = !first.trim() || !last.trim() || !email.trim() || needsDepartment || needsDivision;
 
   const body = { firstName: first.trim(), lastName: last.trim(), phone: phone.trim() || null, departmentId: isDivisionLead ? null : department || null, divisionId: isDivisionLead ? division || null : null, globalRole: role === NO_ROLE ? null : (role as RoleName) };
   const save = () =>
     creating
       ? create.mutate({ ...body, email: email.trim() }, { onSuccess: () => { toast.success("User created"); onClose(); }, onError: (e) => toast.error(e.message) })
-      : update.mutate(body, {
+      : update.mutate(emailChanged ? { ...body, email: email.trim() } : body, {
           onSuccess: () => {
-            toast.success(roleChanged || scopeChanged ? "Saved. They will be signed out to apply the change." : "Details saved");
+            toast.success(roleChanged || scopeChanged || emailChanged ? "Saved. They will be signed out to apply the change." : "Details saved");
             onClose();
           },
           onError: (e) => toast.error(e.message),
@@ -122,7 +123,7 @@ export function UserPanel({ user, actorIsAdmin, isSelf, onClose }: { user: UserR
             <TextField label="First name" value={first} onChange={(e) => setFirst(e.target.value)} disabled={locked} />
             <TextField label="Last name" value={last} onChange={(e) => setLast(e.target.value)} disabled={locked} />
           </div>
-          {creating && <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@organisation.co.ke" />}
+          <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={locked || (!creating && !actorIsAdmin)} placeholder="name@organisation.co.ke" />
           <TextField label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={locked} placeholder="Optional" />
           {!creating && <p className="text-[13px] leading-normal text-ink-muted">Member since {fmtDate(user.created_at)}. Last sign-in: {lastSeen(user.last_login)}.</p>}
         </section>

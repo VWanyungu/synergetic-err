@@ -185,6 +185,18 @@ router.put('/:id', canWrite, async (req, res) => {
       res.status(403).json({ status: 'error', data: null, message: denied });
       return;
     }
+    // The email is the sign-in identity, so only an Admin may change it, and it must stay unique.
+    const emailChanged = input.email !== undefined && input.email !== current.email.toLowerCase();
+    if (emailChanged) {
+      if (!actorIsAdmin(req)) {
+        res.status(403).json({ status: 'error', data: null, message: 'Only an Admin can change an email address.' });
+        return;
+      }
+      if (await db('users').whereRaw('lower(email) = ?', [input.email!]).whereNot({ id }).first('id')) {
+        res.status(409).json({ status: 'error', data: null, message: 'A user with this email already exists.' });
+        return;
+      }
+    }
     // A Risk Champion works inside one department, so they cannot be left without one.
     const role = input.globalRole !== undefined ? input.globalRole : current.global_role;
     const department = input.departmentId !== undefined ? input.departmentId : current.department_id;
@@ -196,7 +208,7 @@ router.put('/:id', canWrite, async (req, res) => {
     }
     const user = await Users.updateUser(id, input, req.user!.userId);
     // Roles travel inside the sign-in token, so a changed role or department only takes effect after signing in again.
-    if ((input.globalRole !== undefined && input.globalRole !== current.global_role) || (input.departmentId !== undefined && input.departmentId !== current.department_id) || (input.divisionId !== undefined && input.divisionId !== current.division_id)) await revokeSessions(id);
+    if (emailChanged || (input.globalRole !== undefined && input.globalRole !== current.global_role) || (input.departmentId !== undefined && input.departmentId !== current.department_id) || (input.divisionId !== undefined && input.divisionId !== current.division_id)) await revokeSessions(id);
     res.status(200).json({ status: 'success', data: { user }, message: 'User updated' });
   } catch (err) {
     sendRouteError(res, err);
