@@ -6,17 +6,18 @@ import { USER_IDS } from './01_users.js';
 // Runs after 04_risks.ts, which recreates the risks (and so wipes everything hung off them).
 
 const u = (n: number) => `10000000-0000-0000-0000-0000000000${n}`;
-const WANJIRU = u(11), DANIEL = u(12), PETER = u(13), BRIAN = u(14), ACHIENG = u(15), FAITH = u(16), GRACE = u(17);
+const WANJIRU = u(11), DANIEL = u(12), PETER = u(13), BRIAN = u(14), ACHIENG = u(15), FAITH = u(16), GRACE = u(17), KEVIN = u(18);
 
 // user -> [role, department] (Daniel oversees every department, so no department).
 const PEOPLE: [string, string, string | null][] = [
   [WANJIRU, 'Risk Champion', 'IT'],
   [DANIEL, 'Risk Officer', null],
   [PETER, 'Risk Champion', 'Legal'],
-  [BRIAN, 'Risk Champion', 'Mechanical'],
-  [ACHIENG, 'Risk Champion', 'Civil'],
-  [FAITH, 'Risk Champion', 'Electrical'],
-  [GRACE, 'Risk Champion', 'TLM'],
+  [BRIAN, 'Risk Champion', 'Finance'],
+  [ACHIENG, 'Risk Champion', 'Projects'],
+  [FAITH, 'Risk Champion', 'People - Talent, Licences, Labour, Welfare'],
+  [GRACE, 'Risk Champion', 'HSSE'],
+  [KEVIN, 'Risk Champion', 'Commercial'],
 ];
 
 const at = (iso: string) => new Date(`${iso}T09:00:00+03:00`);
@@ -30,6 +31,7 @@ const ERP_V3 = 'Three ERP application servers are two patch cycles behind. A ran
 
 export async function seed(knex: Knex): Promise<void> {
   const dept = Object.fromEntries((await knex('departments').select('id', 'name')).map((d) => [d.name, d.id as string]));
+  const div = Object.fromEntries((await knex('divisions').select('id', 'name')).map((d) => [d.name, d.id as string]));
   const deptName = Object.fromEntries(Object.entries(dept).map(([n, id]) => [id, n]));
 
   for (const [id, role, dep] of PEOPLE) {
@@ -55,7 +57,7 @@ export async function seed(knex: Knex): Promise<void> {
     const reviewed: Date | null = isErp ? at('2026-11-03') : r.last_reviewed_at;
     const description = isErp
       ? ERP_V3
-      : `${r.title}. Raised at the ${deptName[r.department_id]} risk review; the cause and likely impact are still being assessed.`;
+      : `${r.title}. Raised at the ${deptName[r.department_id] ?? 'departmental'} risk review; the cause and likely impact are still being assessed.`;
 
     risks[n] = { ...r, _author: author, _created: created, _reviewed: reviewed, _description: description } as typeof r;
   });
@@ -118,18 +120,21 @@ export async function seed(knex: Knex): Promise<void> {
     });
   }
 
-  // Spread some risks across other divisions so the division registers have something to show (the ERP risk keeps its design pair).
-  const deptIds = Object.values(dept) as string[];
-  const links: { risk_id: string; department_id: string }[] = [];
+  // Spread risks across divisions so all division registers have meaningful data
+  const divIds = Object.values(div) as string[];
+  const links: { risk_id: string; division_id: string }[] = [];
   risks.forEach((r, n) => {
     if (r.title.startsWith('Unpatched ERP')) return;
-    const own = deptIds.indexOf(r.department_id);
-    if (n % 3 === 0) links.push({ risk_id: r.id, department_id: deptIds[(own + 1 + (n % 4)) % deptIds.length]! });
-    if (n % 5 === 0) links.push({ risk_id: r.id, department_id: deptIds[(own + 3 + (n % 3)) % deptIds.length]! });
+    if (divIds.length) {
+      links.push({ risk_id: r.id, division_id: divIds[n % divIds.length]! });
+      if (n % 2 === 0) {
+        links.push({ risk_id: r.id, division_id: divIds[(n + 3) % divIds.length]! });
+      }
+    }
   });
   const seen = new Set<string>();
-  const unique = links.filter((l) => l.department_id !== risks.find((r) => r.id === l.risk_id)!.department_id && !seen.has(l.risk_id + l.department_id) && seen.add(l.risk_id + l.department_id));
-  for (let i = 0; i < unique.length; i += 200) await knex('risk_divisions').insert(unique.slice(i, i + 200)).onConflict(['risk_id', 'department_id']).ignore();
+  const unique = links.filter((l) => !seen.has(l.risk_id + l.division_id) && seen.add(l.risk_id + l.division_id));
+  for (let i = 0; i < unique.length; i += 200) await knex('risk_divisions').insert(unique.slice(i, i + 200)).onConflict(['risk_id', 'division_id']).ignore();
 
   for (let i = 0; i < activity.length; i += 200) await knex('risk_activity').insert(activity.slice(i, i + 200));
   for (let i = 0; i < versions.length; i += 200) await knex('risk_description_versions').insert(versions.slice(i, i + 200));
@@ -139,16 +144,20 @@ export async function seed(knex: Knex): Promise<void> {
   await knex.raw(`update mitigation_actions m set created_at = r.created_at from risks r where r.id = m.risk_id`);
   await knex.raw(`update mitigation_actions set description = 'Agreed with the department head; owner to report progress at the next review.', updated_at = created_at`);
   const [erp] = await knex('risks').where('title', 'like', 'Unpatched ERP%').select('id');
-  await knex('mitigation_actions').where({ risk_id: erp.id, title: 'Patch and isolate ERP servers' }).update({
-    description: 'Apply the outstanding vendor patches, move the ERP servers onto an isolated subnet, and run a full restore test from backup.',
-    owner_id: BRIAN, updated_at: at('2026-11-02'),
-  });
-  await knex('mitigation_actions').where({ risk_id: erp.id, title: 'Failover for payroll and procurement data' }).update({
-    description: 'Move payroll and procurement data to the secondary data centre and document the failover steps.',
-    owner_id: WANJIRU, updated_at: at('2026-11-03'),
-  });
-  await knex('risk_divisions').insert([
-    { risk_id: erp.id, department_id: dept['TLM'] },
-    { risk_id: erp.id, department_id: dept['Corporate Services'] },
-  ]);
+  if (erp) {
+    await knex('mitigation_actions').where({ risk_id: erp.id, title: 'Patch and isolate ERP servers' }).update({
+      description: 'Apply the outstanding vendor patches, move the ERP servers onto an isolated subnet, and run a full restore test from backup.',
+      owner_id: BRIAN, updated_at: at('2026-11-02'),
+    });
+    await knex('mitigation_actions').where({ risk_id: erp.id, title: 'Failover for payroll and procurement data' }).update({
+      description: 'Move payroll and procurement data to the secondary data centre and document the failover steps.',
+      owner_id: WANJIRU, updated_at: at('2026-11-03'),
+    });
+    if (div['TLM'] && div['Corporate Services']) {
+      await knex('risk_divisions').insert([
+        { risk_id: erp.id, division_id: div['TLM'] },
+        { risk_id: erp.id, division_id: div['Corporate Services'] },
+      ]).onConflict(['risk_id', 'division_id']).ignore();
+    }
+  }
 }

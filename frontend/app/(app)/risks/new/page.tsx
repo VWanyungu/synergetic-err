@@ -12,6 +12,7 @@ import { Alert, Spinner } from "@/components/auth/auth-ui";
 import { ChipGroup, DateField, SegmentGroup, SelectField, TextareaField, TextField } from "@/components/risk-form/fields";
 import { useCreateRisk, useRiskFormOptions } from "@/hooks/queries/use-create-risk";
 import { useDepartments } from "@/hooks/queries/use-risks";
+import { useDivisions } from "@/hooks/queries/use-registers";
 import { ApiError } from "@/lib/api-client";
 
 const score = z.number({ error: "Choose a score." }).int().min(1).max(5);
@@ -98,7 +99,7 @@ export default function NewRiskPage() {
   const failed = Object.keys(errors).length;
   const names = options.data?.categories.map((c) => ({ id: c, name: c })) ?? [];
   const people = options.data?.owners ?? [];
-  const divisions = (departments.data ?? []).filter((d) => d.id !== departmentId);
+  const divisions = useDivisions();
 
   const onSubmit = (v: Values) =>
     create.mutate(
@@ -112,7 +113,7 @@ export default function NewRiskPage() {
         likelihood: v.likelihood,
         riskResponse: v.riskResponse || undefined,
         nextReviewDate: v.nextReviewDate || null,
-        divisionIds: v.divisionIds.filter((d) => d !== v.departmentId),
+        divisionIds: v.divisionIds,
         action: v.actionTitle.trim()
           ? { title: v.actionTitle.trim(), ownerId: v.actionOwnerId || null, dueDate: v.actionDueDate || null, status: v.actionStatus }
           : null,
@@ -125,7 +126,7 @@ export default function NewRiskPage() {
       },
     );
 
-  const loadError = options.error ?? departments.error;
+  const loadError = options.error ?? departments.error ?? divisions.error;
 
   return (
     <div className="flex w-full flex-col gap-8">
@@ -141,11 +142,11 @@ export default function NewRiskPage() {
       {loadError ? (
         <div className="flex flex-col items-start gap-3">
           <Alert variant="error" title="Could not load the form">{loadError.message}</Alert>
-          <button type="button" className="btn-secondary btn-auto" onClick={() => { options.refetch(); departments.refetch(); }}>
+          <button type="button" className="btn-secondary btn-auto" onClick={() => { options.refetch(); departments.refetch(); divisions.refetch(); }}>
             Try again
           </button>
         </div>
-      ) : options.isPending || departments.isPending ? (
+      ) : options.isPending || departments.isPending || divisions.isPending ? (
         <FormSkeleton />
       ) : (
         <form noValidate onSubmit={handleSubmit(onSubmit)}>
@@ -200,8 +201,8 @@ export default function NewRiskPage() {
 
           <Section title="Affected divisions">
             <Controller name="divisionIds" control={control} render={({ field }) => (
-              <ChipGroup options={divisions} value={field.value} onChange={field.onChange}
-                emptyText="No other departments to select." />
+              <ChipGroup options={divisions.data ?? []} value={field.value} onChange={field.onChange}
+                emptyText="No divisions available." />
             )} />
           </Section>
 

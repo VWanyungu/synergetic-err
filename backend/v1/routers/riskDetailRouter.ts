@@ -71,7 +71,7 @@ router.get('/:id', async (req, res) => {
     const [dept, owner, divisions, counts, actors, versions, transfers] = await Promise.all([
       db('departments').where({ id: risk.department_id }).first('id', 'name'),
       risk.owner_id ? db('users').where({ id: risk.owner_id }).first('id', 'first_name', 'last_name', 'department_id') : null,
-      db('risk_divisions as rd').join('departments as d', 'd.id', 'rd.department_id').where('rd.risk_id', id).select('d.id', 'd.name', 'd.code').orderBy('d.name'),
+      db('risk_divisions as rd').join('divisions as d', 'd.id', 'rd.division_id').where('rd.risk_id', id).select('d.id', 'd.name', 'd.code').orderBy('d.name'),
       db.raw(
         `select (select count(*) from risk_activity where risk_id = ? and type = 'comment')::int as comments,
                 (select count(*) from mitigation_actions where risk_id = ?)::int as plans`,
@@ -262,16 +262,16 @@ router.patch('/:id', async (req, res) => {
         );
       }
       if (b.divisionIds) {
-        const next = b.divisionIds.filter((d) => d !== risk.department_id);
-        const current: string[] = await t('risk_divisions').where({ risk_id: risk.id }).pluck('department_id');
-        const names = Object.fromEntries((await t('departments').select('id', 'name')).map((d) => [d.id, d.name]));
-        if (next.some((d) => !names[d])) throw new HttpError(400, 'Unknown department');
+        const next = b.divisionIds;
+        const current: string[] = await t('risk_divisions').where({ risk_id: risk.id }).pluck('division_id');
+        const names = Object.fromEntries((await t('divisions').select('id', 'name')).map((d) => [d.id, d.name]));
+        if (next.some((d) => !names[d])) throw new HttpError(400, 'Unknown division');
         for (const d of next.filter((d) => !current.includes(d))) {
-          await t('risk_divisions').insert({ risk_id: risk.id, department_id: d });
+          await t('risk_divisions').insert({ risk_id: risk.id, division_id: d });
           await log(t, risk.id, v.id, 'division_added', { name: names[d] });
         }
         for (const d of current.filter((d) => !next.includes(d))) {
-          await t('risk_divisions').where({ risk_id: risk.id, department_id: d }).del();
+          await t('risk_divisions').where({ risk_id: risk.id, division_id: d }).del();
           await log(t, risk.id, v.id, 'division_removed', { name: names[d] });
         }
       }
@@ -372,7 +372,6 @@ router.post('/:id/transfer', async (req, res) => {
       const [from, to] = await Promise.all([t('departments').where({ id: risk.department_id }).first('name'), t('departments').where({ id: departmentId }).first('name')]);
       if (!to) throw new HttpError(400, 'Unknown department');
       await t('risks').where({ id: risk.id }).update({ department_id: departmentId, updated_at: t.fn.now() });
-      await t('risk_divisions').where({ risk_id: risk.id, department_id: departmentId }).del();
       await log(t, risk.id, v.id, 'transferred', { from: from?.name, to: to.name });
     });
     ok(res, null, 'Risk transferred');

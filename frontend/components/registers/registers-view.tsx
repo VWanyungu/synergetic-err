@@ -1,15 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Briefcase, Cog, Construction, Landmark, Layers, FolderKanban, RadioTower, Scale, Server, Zap, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Briefcase, Building2, Cog, Construction, FolderKanban, Landmark, Layers, RadioTower, Scale, Server, ShieldAlert, TrendingUp, Truck, Users, Zap, type LucideIcon } from "lucide-react";
 import type { RegisterSummary } from "@/lib/risk";
 import { cn } from "@/lib/utils";
 
 export const ICONS: Record<string, LucideIcon> = {
+  PPL: Users,
+  LEG: Scale,
   LG: Scale,
-  PR: FolderKanban,
+  FIN: Landmark,
   IT: Server,
-  DM: Landmark,
+  PRJ: FolderKanban,
+  PR: FolderKanban,
+  HSE: ShieldAlert,
+  COM: TrendingUp,
+  SCM: Truck,
+  DM: Building2,
   ME: Cog,
   CV: Construction,
   EL: Zap,
@@ -29,7 +36,7 @@ export function withTotals(registers: RegisterSummary[], kind: Kind = "departmen
     id: "all",
     name: "All departments",
     code: "ALL",
-    description: `The full register across all ${registers.length === 9 ? "nine" : registers.length} departments.`,
+    description: `The full register across all ${registers.length === 8 ? "eight" : registers.length} departments.`,
     total: sum("total"),
     high: sum("high"),
     medium: sum("medium"),

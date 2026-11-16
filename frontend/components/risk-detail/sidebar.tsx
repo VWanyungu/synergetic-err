@@ -10,6 +10,7 @@ import type { DialogKind } from "@/components/risk-detail/dialogs";
 import { useRiskFormOptions } from "@/hooks/queries/use-create-risk";
 import { usePatchRisk, useRiskCommand } from "@/hooks/queries/use-risk-detail";
 import { useDepartments } from "@/hooks/queries/use-risks";
+import { useDivisions } from "@/hooks/queries/use-registers";
 import { fmtDate, RESPONSE_LABEL, type RiskDetail } from "@/lib/risk-detail";
 
 type Field = "rating" | "response" | "category" | "divisions" | "owner";
@@ -35,6 +36,7 @@ export function Sidebar({ risk, onDialog }: { risk: RiskDetail; onDialog: (k: Di
   const [draft, setDraft] = useState<Record<string, unknown>>({});
   const options = useRiskFormOptions();
   const departments = useDepartments();
+  const divisions = useDivisions();
   const patch = usePatchRisk(risk.id);
   const review = useRiskCommand(risk.id, "review");
   const can = risk.can.edit;
@@ -97,7 +99,7 @@ export function Sidebar({ risk, onDialog }: { risk: RiskDetail; onDialog: (k: Di
       <Block title="Affected divisions" field="divisions" {...block}>
         {editing === "divisions" ? (
           <>
-            <ChipGroup options={(departments.data ?? []).filter((x) => x.id !== risk.department.id)} value={d.divisionIds} onChange={(v) => setDraft({ ...d, divisionIds: v })} emptyText="No other departments." />
+            <ChipGroup options={divisions.data ?? []} value={d.divisionIds} onChange={(v) => setDraft({ ...d, divisionIds: v })} emptyText="No divisions available." />
             {controls({ divisionIds: d.divisionIds })}
           </>
         ) : risk.divisions.length ? (
