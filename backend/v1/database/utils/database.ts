@@ -66,6 +66,7 @@ export interface UserAuthView {
   email: string | null;
   passwordHash: string | null;
   firstName: string | null;
+  status: string | null;
 }
 
 export interface CreateUserInput {
@@ -254,17 +255,18 @@ export class Users {
 
   static async getSingleUserByEmail(email: string): Promise<UserAuthView> {
     const [user] = await db('users')
-      .select<{ id: string; email: string; password_hash: string; first_name: string }[]>(
+      .select<{ id: string; email: string; password_hash: string; first_name: string; status: string }[]>(
         'id',
         'email',
         'password_hash',
         'first_name',
+        'status',
       )
       .where('email', email);
 
-    if (!user) return { userId: null, email: null, passwordHash: null, firstName: null };
+    if (!user) return { userId: null, email: null, passwordHash: null, firstName: null, status: null };
 
-    return { userId: user.id, email: user.email, passwordHash: user.password_hash, firstName: user.first_name };
+    return { userId: user.id, email: user.email, passwordHash: user.password_hash, firstName: user.first_name, status: user.status };
   }
 
   static async createUser(input: CreateUserInput): Promise<{ userId: string; email: string }> {

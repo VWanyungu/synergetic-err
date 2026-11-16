@@ -29,6 +29,11 @@ router.post('/', async (req, res) => {
       return;
     }
 
+    if (user.status === 'deactivated') {
+      res.status(403).json({ status: 'error', data: null, message: 'This account is deactivated. Contact an administrator.' });
+      return;
+    }
+
     const roles = await Roles.getRoles(user.userId);
 
     const tokenData = {

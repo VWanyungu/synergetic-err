@@ -1,7 +1,6 @@
 import express from 'express';
 import authenticateToken from './middlewares/token.js';
 import usersRouter from './routers/usersRouter.js';
-import signUpRouter from './routers/signUpRouter.js';
 import loginRouter from './routers/loginRouter.js';
 import logoutRouter from './routers/logoutRouter.js';
 import refreshTokenRouter from './routers/refreshTokenRouter.js';
@@ -21,7 +20,7 @@ import divisionsRouter from './routers/divisionsRouter.js';
 
 const router = express.Router();
 
-router.use('/signup', signUpRouter);
+// No public sign-up: accounts are created by an Admin from the Users page.
 router.use('/login', loginRouter);
 router.use('/forgot-password', forgotPasswordRouter);
 router.use('/reset-password', resetUserPasswordRouter);

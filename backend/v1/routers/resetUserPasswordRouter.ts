@@ -26,6 +26,10 @@ router.post('/:resetToken', async (req, res) => {
       res.status(400).json({ status: 'error', data: null, message: 'Password required' });
       return;
     }
+    if (password.length < 8) {
+      res.status(400).json({ status: 'error', data: null, message: 'Password must be at least 8 characters.' });
+      return;
+    }
     const hashedPassword = await hashPassword(password);
     const updateRes = await Users.updateUserPassword({
       userId: user.userId,

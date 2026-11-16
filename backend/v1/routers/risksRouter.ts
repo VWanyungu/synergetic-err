@@ -228,14 +228,14 @@ router.get('/register', async (req, res) => {
   }
 });
 
-// GET /risks/registers — one row per department for the All registers page: active, unarchived risks split by rating band.
+// GET /risks/registers — one row per department for the All registers page: unarchived risks (open or closed) split by rating band.
 router.get('/registers', denyDivisionLead, async (req, res) => {
   try {
     const own = await scopedDepartment(req.user!.userId);
     const rows = await db('departments as d')
       .modify((q) => own && q.where('d.id', own))
       .leftJoin('risks as r', function () {
-        this.on('r.department_id', 'd.id').andOnNull('r.archived_at').andOnIn('r.status', ['open', 'in_progress']);
+        this.on('r.department_id', 'd.id').andOnNull('r.archived_at');
       })
       .groupBy('d.id')
       .orderBy('d.name')
@@ -263,7 +263,7 @@ router.get('/divisions', async (req, res) => {
       .modify((q) => ownDivision && q.where('d.id', ownDivision))
       .leftJoin('risk_divisions as rd', 'rd.division_id', 'd.id')
       .leftJoin('risks as r', function () {
-        this.on('r.id', 'rd.risk_id').andOnNull('r.archived_at').andOnIn('r.status', ['open', 'in_progress']);
+        this.on('r.id', 'rd.risk_id').andOnNull('r.archived_at');
       })
       .groupBy('d.id')
       .orderBy('d.name')

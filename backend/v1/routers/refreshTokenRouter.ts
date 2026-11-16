@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { Tokens, Roles } from '../database/utils/database.js';
+import db from '../database/dbSetup.js';
 import generateJwtToken from '../utils/generateJwtToken.js';
 import type { JwtUserPayload } from '../../types.js';
 
@@ -44,6 +45,13 @@ router.post('/', async (req, res) => {
     // Read the grants back from the database rather than copying them out of the old token.
     // Roles change while a session is open, and a token minted from a token would carry the
     // stale set until the user signed out and in again. A revoked role must stop working, too.
+    // A deactivated account gets no new access token, even if a refresh token is still out there.
+    const account = await db('users').where({ id: user.userId }).first('status');
+    if (!account || account.status === 'deactivated') {
+      res.status(401).json({ status: 'error', data: null, message: 'Account deactivated' });
+      return;
+    }
+
     const roles = await Roles.getRoles(user.userId);
 
     const { token } = generateJwtToken({ ...user, role: roles }, 'token');

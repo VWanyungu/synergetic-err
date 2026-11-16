@@ -30,7 +30,7 @@ export const DEFAULT_FILTERS: RegisterFilters = {
   divisionId: "",
   q: "",
   quick: [],
-  status: ["active"],
+  status: [],
   category: "",
   rating: [],
   month: "",
