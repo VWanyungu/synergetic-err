@@ -10,6 +10,7 @@ import { ICONS } from "@/components/registers/registers-view";
 import { useDivisions, useRegisters } from "@/hooks/queries/use-registers";
 import { useUnreadCount } from "@/hooks/queries/use-notifications";
 import { useMe } from "@/hooks/queries/use-me";
+import { isDivisionLead } from "@/lib/roles";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +60,7 @@ export function Navbar() {
   const { email, logout } = useAuth();
   const { toggle: toggleTheme } = useTheme();
   const me = useMe();
+  const divisionLead = !!me.data && isDivisionLead(me.data.roles.map((r) => r.role));
   const count = useUnreadCount().data ?? 0;
   const registers = useRegisters();
   const divisions = useDivisions();
@@ -81,6 +83,9 @@ export function Navbar() {
         <Image src="/synergetic-logo.png" alt="Synergetic" width={106} height={45} priority />
       </Link>
       <nav className="ml-4 flex items-center gap-1">
+        {/* A Division Lead has one place to go: their division's register. */}
+        {divisionLead && me.data?.divisionId ? link(`/risks/division/${me.data.divisionId}`, "My division", pathname.startsWith("/risks")) : (
+        <>
         {link("/", "Dashboard", pathname === "/")}
 
         <div className="group relative">
@@ -134,6 +139,10 @@ export function Navbar() {
 
         {link("/risks/distribution", "Heat map", pathname.startsWith("/risks/distribution"))}
         {link("/reports", "Reports", pathname.startsWith("/reports"))}
+        {/* Only people who manage users see this. */}
+        {me.data?.roles.some((r) => r.role === "Admin" || r.role === "Risk Officer") && link("/admin", "Admin", pathname.startsWith("/admin"))}
+        </>
+        )}
       </nav>
 
       <div className="flex-1" />
@@ -157,13 +166,13 @@ export function Navbar() {
         <BellWithCount count={count} />
       </Link>
 
-      <Link
+      {!divisionLead && <Link
         href="/risks/new"
         className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border border-line-input px-4 text-[14px] font-medium leading-[1.4] transition-[background-color,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-field active:scale-[0.98]"
       >
         <Plus className="size-4 text-brand" strokeWidth={2} aria-hidden />
         New risk
-      </Link>
+      </Link>}
 
       <div className="group relative">
         <button

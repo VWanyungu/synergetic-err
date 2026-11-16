@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { Users, Tokens, Roles } from '../database/utils/database.js';
 import generateJwtToken from '../utils/generateJwtToken.js';
 import { sendRouteError } from '../utils/errors.js';
+import db from '../database/dbSetup.js';
 
 const router = express.Router();
 
@@ -40,6 +41,8 @@ router.post('/', async (req, res) => {
     if (!token || !refreshToken) throw new Error('Token generation failed');
 
     await Tokens.storeRefreshToken(user.userId, refreshToken);
+    // The Users page shows when each person last signed in.
+    await db('users').where({ id: user.userId }).update({ last_login: db.fn.now() });
 
     res.status(200).json({
       status: 'success',

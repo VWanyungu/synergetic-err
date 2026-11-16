@@ -7,6 +7,8 @@ export const SEEDED_ACCESS_ROLES = [
   { name: 'Admin', sort_order: 1 },
   { name: 'Risk Champion', sort_order: 2 },
   { name: 'Risk Officer', sort_order: 3 },
+  { name: 'Department Lead', sort_order: 4 },
+  { name: 'Division Lead', sort_order: 5 },
 ];
 
 export async function seed(knex: Knex): Promise<void> {

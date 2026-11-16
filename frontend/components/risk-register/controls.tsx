@@ -28,7 +28,7 @@ function CrumbSwitcher({ items, selectedId, onSelect }: { items: DropdownItem[];
   );
 }
 
-export function PageHeader({ kind, name, switcher }: { kind: "department" | "division"; name: string; switcher?: { items: DropdownItem[]; selectedId: string; onSelect: (id: string) => void } }) {
+export function PageHeader({ kind, name, switcher, canCreate = true }: { kind: "department" | "division"; name: string; canCreate?: boolean; switcher?: { items: DropdownItem[]; selectedId: string; onSelect: (id: string) => void } }) {
   return (
     <div className="flex flex-col gap-2">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 pb-3 text-[14px] leading-normal">
@@ -41,10 +41,12 @@ export function PageHeader({ kind, name, switcher }: { kind: "department" | "div
       </nav>
       <div className="flex items-end justify-between">
         <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">Risk Register</h1>
-        <Link href="/risks/new" className="btn-primary btn-auto">
-          <Plus className="size-[18px]" strokeWidth={2.5} />
-          New risk
-        </Link>
+        {canCreate && (
+          <Link href="/risks/new" className="btn-primary btn-auto">
+            <Plus className="size-[18px]" strokeWidth={2.5} />
+            New risk
+          </Link>
+        )}
       </div>
     </div>
   );

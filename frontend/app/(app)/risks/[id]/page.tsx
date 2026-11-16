@@ -75,7 +75,7 @@ export default function RiskDetailPage() {
               <>
                 <Activity risk={r} items={activity.data} loading={activity.isPending} userId={userId} />
                 {activity.isError && <p className="text-[14px] text-danger-fg">{activity.error.message}</p>}
-                <Composer risk={r} onClose={() => setDialog("close")} onReopen={() => setDialog("reopen")} />
+                {r.can.comment && <Composer risk={r} onClose={() => setDialog("close")} onReopen={() => setDialog("reopen")} />}
               </>
             ) : (
               <PlansTab risk={r} />

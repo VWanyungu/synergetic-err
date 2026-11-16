@@ -3,9 +3,10 @@ import Joi from 'joi';
 import db from '../database/dbSetup.js';
 import { sendRouteError } from '../utils/errors.js';
 import { applyFilters, base, csv, orderFor, ratingSql, registerColumns } from './risksRouter.js';
-import { scopedDepartment } from '../utils/scope.js';
+import { denyDivisionLead, scopedDepartment } from '../utils/scope.js';
 
 const router = express.Router();
+router.use(denyDivisionLead);
 
 const querySchema = Joi.object({
   month: Joi.string().pattern(/^\d{4}-(0[1-9]|1[0-2])$/).empty(''),

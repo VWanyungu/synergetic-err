@@ -3,7 +3,7 @@ import Joi from 'joi';
 import type { Knex } from 'knex';
 import db from '../database/dbSetup.js';
 import { sendRouteError } from '../utils/errors.js';
-import { scopedDepartment } from '../utils/scope.js';
+import { denyDivisionLead, scopedDepartment, scopedDivision } from '../utils/scope.js';
 
 const router = express.Router();
 
@@ -176,10 +176,15 @@ router.get('/register', async (req, res) => {
   }
   const f = value as RegisterFilters & { sort: string; page: number; perPage: number };
   const userId = req.user!.userId;
-  // A Risk Champion only ever sees their own department's register.
+  // A Risk Champion or Department Lead only ever sees their own department's register; a Division Lead only their division's.
   const own = await scopedDepartment(userId);
+  const ownDivision = await scopedDivision(userId);
   if (own) {
     f.departmentId = own;
+  }
+  if (ownDivision) {
+    f.divisionId = ownDivision;
+    f.departmentId = undefined;
   }
 
   try {
@@ -224,7 +229,7 @@ router.get('/register', async (req, res) => {
 });
 
 // GET /risks/registers — one row per department for the All registers page: active, unarchived risks split by rating band.
-router.get('/registers', async (req, res) => {
+router.get('/registers', denyDivisionLead, async (req, res) => {
   try {
     const own = await scopedDepartment(req.user!.userId);
     const rows = await db('departments as d')
@@ -251,9 +256,11 @@ router.get('/registers', async (req, res) => {
 });
 
 // GET /risks/divisions — counting the risks that affect each division rather than the department that owns them.
-router.get('/divisions', async (_req, res) => {
+router.get('/divisions', async (req, res) => {
   try {
+    const ownDivision = await scopedDivision(req.user!.userId);
     const rows = await db('divisions as d')
+      .modify((q) => ownDivision && q.where('d.id', ownDivision))
       .leftJoin('risk_divisions as rd', 'rd.division_id', 'd.id')
       .leftJoin('risks as r', function () {
         this.on('r.id', 'rd.risk_id').andOnNull('r.archived_at').andOnIn('r.status', ['open', 'in_progress']);
@@ -318,7 +325,7 @@ const createRiskSchema = Joi.object({
 });
 
 // POST /risks — creates a risk (code like IT-07), its affected divisions and an optional first mitigation action.
-router.post('/', async (req, res) => {
+router.post('/', denyDivisionLead, async (req, res) => {
   const { error, value } = createRiskSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
   if (error) {
     res.status(400).json({ status: 'error', data: null, message: error.message });
@@ -395,6 +402,12 @@ router.get('/:id/actions', async (req, res) => {
     return;
   }
   try {
+    // A Division Lead may only read risks that affect their division.
+    const ownDivision = await scopedDivision(req.user!.userId);
+    if (ownDivision && !(await db('risk_divisions').where({ risk_id: req.params.id, division_id: ownDivision }).first('risk_id'))) {
+      res.status(403).json({ status: 'error', data: null, message: 'This risk does not affect your division.' });
+      return;
+    }
     const rows = await db('mitigation_actions as a')
       .leftJoin('users as u', 'u.id', 'a.owner_id')
       .where('a.risk_id', req.params.id)
@@ -418,7 +431,7 @@ router.get('/:id/actions', async (req, res) => {
 // GET /risks?departmentId=<uuid>  — active (non-archived) risks, highest rating first.
 // shortcut: no role scoping yet (a Risk Champion should only see their own department, FR-SCORE-003);
 // add once users are linked to departments.
-router.get('/', async (req, res) => {
+router.get('/', denyDivisionLead, async (req, res) => {
   const { month } = req.query as { month?: string };
   // A Risk Champion's heat map is their own department's, whatever the request asks for.
   const own = await scopedDepartment(req.user!.userId);

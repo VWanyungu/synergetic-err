@@ -4,6 +4,7 @@ import type { Knex } from 'knex';
 import db from '../database/dbSetup.js';
 import { sendRouteError } from '../utils/errors.js';
 import { uploadToCloudinary, isStorageConfigured } from '../utils/cloudinary.js';
+import { DEPARTMENT_ROLES, scopedDivision } from '../utils/scope.js';
 
 const router = express.Router();
 
@@ -17,6 +18,20 @@ const fail = (res: express.Response, err: unknown) =>
 const ok = (res: express.Response, data: unknown, message: string, status = 200) => res.status(status).json({ status: 'success', data, message });
 
 const uuid = Joi.string().uuid().required();
+
+// A Division Lead is read-only and sees only risks that affect their division. Every route under /:id passes through here.
+router.param('id', async (req, res, next, id) => {
+  try {
+    const division = await scopedDivision(req.user!.userId);
+    if (!division) return next();
+    if (req.method !== 'GET') throw new HttpError(403, 'Your role is read-only.');
+    if (!/^[0-9a-f-]{36}$/i.test(id) || !(await db('risk_divisions').where({ risk_id: id, division_id: division }).first('risk_id')))
+      throw new HttpError(403, 'This risk does not affect your division.');
+    next();
+  } catch (err) {
+    fail(res, err);
+  }
+});
 function check<T>(schema: Joi.Schema, value: unknown): T {
   const { error, value: v } = schema.validate(value, { abortEarly: false, stripUnknown: true });
   if (error) throw new HttpError(400, error.message);
@@ -24,7 +39,7 @@ function check<T>(schema: Joi.Schema, value: unknown): T {
 }
 
 const roleLabel = (roles: string[]) =>
-  roles.includes('Risk Officer') ? 'Risk Officer' : roles.includes('Risk Champion') ? 'Risk Champion' : roles.includes('Admin') ? 'Admin' : null;
+  roles.includes('Risk Officer') ? 'Risk Officer' : roles.includes('Department Lead') ? 'Department Lead' : roles.includes('Risk Champion') ? 'Risk Champion' : roles.includes('Division Lead') ? 'Division Lead' : roles.includes('Admin') ? 'Admin' : null;
 
 type Viewer = { id: string; roles: string[]; departmentId: string | null };
 async function viewer(req: express.Request): Promise<Viewer> {
@@ -37,9 +52,9 @@ async function viewer(req: express.Request): Promise<Viewer> {
 }
 
 // Edit, transfer, close and archive share one rule (FR-SCORE-003): Admin and Risk Officer anywhere,
-// a Risk Champion only in their own department. A transferred risk therefore turns read-only for its old department.
+// a Risk Champion or Department Lead only in their own department. A transferred risk therefore turns read-only for its old department.
 const canEdit = (v: Viewer, departmentId: string) =>
-  v.roles.includes('Admin') || v.roles.includes('Risk Officer') || (v.roles.includes('Risk Champion') && v.departmentId === departmentId);
+  v.roles.includes('Admin') || v.roles.includes('Risk Officer') || (v.roles.some((r) => DEPARTMENT_ROLES.includes(r)) && v.departmentId === departmentId);
 
 async function loadRisk(id: string) {
   const risk = await db('risks').where({ id }).first();
@@ -118,7 +133,7 @@ router.get('/:id', async (req, res) => {
         transfer: transfers[0] ? { at: transfers[0].created_at, ...transfers[0].data } : null,
         // Every transfer, newest first, for the Transferred card's history.
         transfers: transfers.map((t) => ({ at: t.created_at, from: t.data.from ?? null, to: t.data.to ?? null, by: fullName(t.first_name ? t : null) })),
-        can: { edit: canEdit(v, risk.department_id), archiveDirect: v.roles.includes('Admin') || v.roles.includes('Risk Officer') },
+        can: { edit: canEdit(v, risk.department_id), comment: !(await scopedDivision(v.id)), archiveDirect: v.roles.includes('Admin') || v.roles.includes('Risk Officer') },
         archiveRequest: pendingArchive ? { id: pendingArchive.id, requestedAt: pendingArchive.created_at, requestedBy: fullName(pendingArchive) } : null,
       },
       'Risk retrieved successfully',

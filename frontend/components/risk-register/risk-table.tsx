@@ -8,6 +8,7 @@ import { statusFiltered, useMitigationActions, type RegisterFilters } from "@/ho
 import { useOutsideClick } from "@/hooks/use-outside-click";
 import { CheckMenu } from "@/components/risk-register/filter-menus";
 import { DropdownList } from "@/components/ui/dropdown";
+import { DEPARTMENT_ROLES } from "@/lib/roles";
 import { useMe } from "@/hooks/queries/use-me";
 import { useRiskCommand } from "@/hooks/queries/use-risk-detail";
 import { useRegisters } from "@/hooks/queries/use-registers";
@@ -229,7 +230,7 @@ function Panel({ risk, compact }: { risk: RegisterRisk; compact?: boolean }) {
   const actions = useMitigationActions(risk.id, true);
   // Same rule as the risk page: Admin and Risk Officer anywhere, a Risk Champion in their own department.
   const me = useMe().data;
-  const canReview = !!me && (me.roles.some((r) => r.role === "Admin" || r.role === "Risk Officer") || (me.roles.some((r) => r.role === "Risk Champion") && me.departmentId === risk.departmentId));
+  const canReview = !!me && (me.roles.some((r) => r.role === "Admin" || r.role === "Risk Officer") || (me.roles.some((r) => DEPARTMENT_ROLES.includes(r.role)) && me.departmentId === risk.departmentId));
   const review = useRiskCommand(risk.id, "review");
   const today = new Date().toISOString().slice(0, 10);
 
