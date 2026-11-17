@@ -99,13 +99,9 @@ jobs:
             echo "==> Pulling updated docker images..."
             docker compose pull
 
-            # Stop and remove existing containers
-            echo "==> Stopping running containers..."
-            docker compose down
-
-            # Start up containers in detached mode
-            echo "==> Starting containers..."
-            docker compose up -d
+            # Update changed containers in detached mode and remove orphaned services
+            echo "==> Updating containers..."
+            docker compose up -d --remove-orphans
 
             # Wait for backend container to become ready
             echo "==> Waiting for backend and database to become ready..."
@@ -131,4 +127,3 @@ jobs:
             docker image prune -f
 
             echo "==> Deployment and database migrations completed successfully!"
-
