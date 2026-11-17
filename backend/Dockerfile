@@ -9,6 +9,9 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 FROM base AS runner
+# The commit this image was built from, reported by /health.
+ARG APP_VERSION=dev
+ENV APP_VERSION=${APP_VERSION}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
