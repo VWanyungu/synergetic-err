@@ -5,6 +5,8 @@ import morgan from 'morgan';
 import 'dotenv/config';
 import './types.js';
 import checkVersion from './middlewares/version.js';
+import { health, live } from './v1/utils/health.js';
+import { metricsHandler, trackRequests } from './v1/utils/metrics.js';
 
 // shortcut: some type-checking setups infer helmet's default export as the whole module
 // namespace instead of the callable default; cast past it.
@@ -12,15 +14,17 @@ const helmet = helmetImport as unknown as (options?: Record<string, unknown>) =>
 
 const app = express();
 
+app.use(trackRequests);
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 // shortcut: one 15 MB body limit for every route so risk attachments can arrive as base64 JSON; move uploads to multipart (multer) or a per-route parser if other routes should stay small.
 app.use(express.json({ limit: '15mb' }));
 
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'success', data: null, message: 'ok' });
-});
+// Neither needs the api-v header: monitors and Prometheus call them directly.
+app.get('/health', health);
+app.get('/health/live', live);
+app.get('/metrics', metricsHandler);
 
 app.use(checkVersion());
 

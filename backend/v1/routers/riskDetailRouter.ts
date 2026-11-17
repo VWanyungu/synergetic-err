@@ -4,6 +4,7 @@ import type { Knex } from 'knex';
 import db from '../database/dbSetup.js';
 import { sendRouteError } from '../utils/errors.js';
 import { uploadToCloudinary, isStorageConfigured } from '../utils/cloudinary.js';
+import { R2_PRIVATE_PREFIX, signedDownloadUrl } from '../utils/storage.js';
 import { DEPARTMENT_ROLES, scopedDivision } from '../utils/scope.js';
 
 const router = express.Router();
@@ -154,7 +155,7 @@ router.get('/:id/activity', async (req, res) => {
     const ids = rows.map((r) => r.actor_id).filter(Boolean);
     const [grants, files, edits] = await Promise.all([
       db('roles').whereIn('user_id', ids).whereNull('revoked_at').select('user_id', 'role'),
-      db('risk_attachments').where({ risk_id: id }).whereNotNull('activity_id').select('id', 'activity_id', 'name', 'mime_type', 'bytes', 'url'),
+      db('risk_attachments').where({ risk_id: id }).whereNotNull('activity_id').select('id', 'activity_id', 'name', 'mime_type', 'bytes'),
       db('risk_comment_versions').whereIn('activity_id', rows.map((r) => r.id)).select('activity_id'),
     ]);
     const rolesOf = (uid: string) => roleLabel(grants.filter((g) => g.user_id === uid).map((g) => g.role));
@@ -168,7 +169,7 @@ router.get('/:id/activity', async (req, res) => {
         createdAt: r.created_at,
         editedAt: r.edited_at,
         actor: r.actor_id ? { id: r.actor_id, name: fullName(r), role: rolesOf(r.actor_id) } : null,
-        attachments: files.filter((f) => f.activity_id === r.id).map((f) => ({ id: f.id, name: f.name, mimeType: f.mime_type, bytes: f.bytes, url: f.url })),
+        attachments: files.filter((f) => f.activity_id === r.id).map((f) => ({ id: f.id, name: f.name, mimeType: f.mime_type, bytes: f.bytes })),
         edited: edits.some((e) => e.activity_id === r.id),
       })),
       'Activity retrieved successfully',
@@ -455,8 +456,25 @@ router.post('/:id/attachments', async (req, res) => {
     });
     const [row] = await db('risk_attachments')
       .insert({ risk_id: id, uploaded_by: req.user!.userId, name: b.name, mime_type: b.mimeType, bytes: up.bytes, url: up.url, public_id: up.publicId })
-      .returning(['id', 'name', 'mime_type', 'bytes', 'url']);
-    ok(res, { id: row.id, name: row.name, mimeType: row.mime_type, bytes: row.bytes, url: row.url }, 'File uploaded', 201);
+      .returning(['id', 'name', 'mime_type', 'bytes']);
+    ok(res, { id: row.id, name: row.name, mimeType: row.mime_type, bytes: row.bytes }, 'File uploaded', 201);
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+// GET /risks/:id/attachments/:attachmentId/url — a short-lived link to one file. The id guard above has already refused anyone who may not see this risk.
+router.get('/:id/attachments/:attachmentId/url', async (req, res) => {
+  try {
+    const id = check<string>(uuid, req.params.id);
+    await loadRisk(id);
+    const attachmentId = check<string>(uuid, req.params.attachmentId);
+    const file = await db('risk_attachments').where({ id: attachmentId, risk_id: id }).first('name', 'mime_type', 'url', 'public_id');
+    if (!file) throw new HttpError(404, 'That file does not exist.');
+    // Files kept in R2 are private and get a signed link; Cloudinary files (development and staging) are already public.
+    const isPrivate = String(file.url).startsWith(R2_PRIVATE_PREFIX);
+    const url = isPrivate ? await signedDownloadUrl(file.public_id, file.name, file.mime_type).catch(() => { throw new HttpError(502, 'The file could not be opened. Try again.'); }) : file.url;
+    ok(res, { url, expiresInSeconds: isPrivate ? 300 : null }, 'File link retrieved successfully');
   } catch (err) {
     fail(res, err);
   }

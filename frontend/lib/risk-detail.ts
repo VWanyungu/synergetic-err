@@ -38,7 +38,6 @@ export interface Attachment {
   name: string;
   mimeType: string | null;
   bytes: number;
-  url: string;
 }
 
 export interface ActivityItem {

@@ -11,6 +11,7 @@ import { Markdown } from "@/components/risk-detail/markdown";
 import { diffSentences } from "@/components/risk-detail/diff";
 import { fmtDate, RESPONSE_LABEL, STATUS_LABEL, type ActivityItem, type HistoryVersion, type RiskDetail } from "@/lib/risk-detail";
 import { riskLevel } from "@/lib/risk";
+import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 const SHOWN_CHANGES = 4;
@@ -191,6 +192,17 @@ function DescriptionCard({ risk }: { risk: RiskDetail }) {
   );
 }
 
+/** Files are private: ask the API for a short-lived link, then open it. The tab opens first, on the click, so a popup blocker allows it. */
+function openAttachment(riskId: string, attachmentId: string) {
+  const tab = window.open("", "_blank");
+  api<{ url: string }>(`/risks/${riskId}/attachments/${attachmentId}/url`)
+    .then(({ url }) => (tab ? (tab.location.href = url) : window.location.assign(url)))
+    .catch((e: Error) => {
+      tab?.close();
+      toast.error(e.message);
+    });
+}
+
 function CommentCard({ item, riskId, mine }: { item: ActivityItem; riskId: string; mine: boolean }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(item.body ?? "");
@@ -218,11 +230,11 @@ function CommentCard({ item, riskId, mine }: { item: ActivityItem; riskId: strin
             <ul className="flex flex-wrap gap-2">
               {item.attachments.map((a) => (
                 <li key={a.id}>
-                  <a href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[13px] hover:bg-field">
+                  <button type="button" onClick={() => openAttachment(riskId, a.id)} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[13px] hover:bg-field">
                     <FileText className="size-3.5" aria-hidden />
                     {a.name}
                     <span className="text-ink-muted">{a.bytes < 1048576 ? `${Math.max(1, Math.round(a.bytes / 1024))} KB` : `${(a.bytes / 1048576).toFixed(1)} MB`}</span>
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>

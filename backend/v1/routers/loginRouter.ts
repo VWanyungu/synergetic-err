@@ -4,6 +4,7 @@ import { Users, Tokens, Roles } from '../database/utils/database.js';
 import generateJwtToken from '../utils/generateJwtToken.js';
 import { sendRouteError } from '../utils/errors.js';
 import db from '../database/dbSetup.js';
+import { loginAttempts } from '../utils/metrics.js';
 
 const router = express.Router();
 
@@ -19,17 +20,20 @@ router.post('/', async (req, res) => {
     const user = await Users.getSingleUserByEmail(email);
 
     if (!user.email || !user.passwordHash || user.userId === null) {
+      loginAttempts.inc({ result: 'unknown_user' });
       res.status(404).json({ status: 'error', data: null, message: 'User not found' });
       return;
     }
 
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) {
+      loginAttempts.inc({ result: 'bad_password' });
       res.status(400).json({ status: 'fail', data: null, message: 'Password does not match' });
       return;
     }
 
     if (user.status === 'deactivated') {
+      loginAttempts.inc({ result: 'deactivated' });
       res.status(403).json({ status: 'error', data: null, message: 'This account is deactivated. Contact an administrator.' });
       return;
     }
@@ -45,6 +49,7 @@ router.post('/', async (req, res) => {
     const { token, refreshToken } = generateJwtToken(tokenData, 'all');
     if (!token || !refreshToken) throw new Error('Token generation failed');
 
+    loginAttempts.inc({ result: 'success' });
     await Tokens.storeRefreshToken(user.userId, refreshToken);
     // The Users page shows when each person last signed in.
     await db('users').where({ id: user.userId }).update({ last_login: db.fn.now() });

@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { fileUploads } from './metrics.js';
 import 'dotenv/config';
 
 export interface FileUploadResult {
@@ -73,53 +75,64 @@ export async function uploadToCloudinary(
 }
 
 // ---------------------------------------------------------------- Cloudflare R2 (Production)
+// Two buckets. Attachments go to the private one (R2_BUCKET_NAME) and are only reachable through short-lived signed links
+// that the API hands out after checking who is asking. Profile pictures are shown as plain <img> tags in lists, which cannot
+// carry a signature that expires, so they go to a separate public bucket (R2_PUBLIC_BUCKET_NAME, served from R2_PUBLIC_URL).
+const r2Client = () => {
+  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
+  if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !process.env.R2_BUCKET_NAME) {
+    throw new Error('Cloudflare R2 is not configured yet (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME).');
+  }
+  return new S3Client({
+    region: 'auto',
+    endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY },
+  });
+};
+
+/** Stored in `risk_attachments.url` for private files: a marker, not a link anyone can open. */
+export const R2_PRIVATE_PREFIX = 'r2:';
+
 export async function uploadToR2(
   file: Buffer,
   name: string,
   mime: string,
   folder = 'risk-attachments',
 ): Promise<FileUploadResult> {
-  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL } = process.env;
-
-  if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME) {
-    throw new Error(
-      'Cloudflare R2 is not configured yet (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME).',
-    );
+  const s3 = r2Client();
+  const isPublic = folder === 'profile';
+  const bucket = isPublic ? process.env.R2_PUBLIC_BUCKET_NAME : process.env.R2_BUCKET_NAME;
+  if (!bucket || (isPublic && !process.env.R2_PUBLIC_URL)) {
+    throw new Error('Profile images need R2_PUBLIC_BUCKET_NAME and R2_PUBLIC_URL (the public bucket and its domain).');
   }
 
   const resourceType = mime.startsWith('image/') ? 'image' : 'raw';
   const cleanName = name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const key = `${folder}/${Date.now()}-${cleanName}`;
 
-  const s3 = new S3Client({
-    region: 'auto',
-    endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: R2_ACCESS_KEY_ID,
-      secretAccessKey: R2_SECRET_ACCESS_KEY,
-    },
-  });
-
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: R2_BUCKET_NAME,
-      Key: key,
-      Body: file,
-      ContentType: mime,
-    }),
-  );
-
-  const publicBase = R2_PUBLIC_URL
-    ? R2_PUBLIC_URL.replace(/\/$/, '')
-    : `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
-  const url = `${publicBase}/${key}`;
+  await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: file, ContentType: mime }));
 
   return {
-    url,
+    url: isPublic ? `${process.env.R2_PUBLIC_URL!.replace(/\/$/, '')}/${key}` : `${R2_PRIVATE_PREFIX}${key}`,
     publicId: key,
     bytes: file.length,
     resourceType,
   };
+}
+
+/** A link that opens one private file for a few minutes. Images and PDFs open in the tab; anything else downloads under its own name. */
+export async function signedDownloadUrl(key: string, name: string, mime: string | null, expiresIn = 300): Promise<string> {
+  const inline = !!mime && (mime.startsWith('image/') || mime === 'application/pdf');
+  return getSignedUrl(
+    r2Client(),
+    new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: key,
+      ResponseContentDisposition: `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(name)}`,
+      ...(mime && { ResponseContentType: mime }),
+    }),
+    { expiresIn },
+  );
 }
 
 // ---------------------------------------------------------------- Unified Upload
@@ -130,11 +143,14 @@ export async function uploadFile(
   mime: string,
   folder = 'risk-attachments',
 ): Promise<FileUploadResult> {
-  const env = getEnv();
-  if (env === 'production') {
-    return uploadToR2(file, name, mime, folder);
+  const provider = getEnv() === 'production' ? 'r2' : 'cloudinary';
+  try {
+    const result = provider === 'r2' ? await uploadToR2(file, name, mime, folder) : await uploadToCloudinary(file, name, mime, folder);
+    fileUploads.inc({ provider, result: 'success' });
+    return result;
+  } catch (err) {
+    fileUploads.inc({ provider, result: 'error' });
+    throw err;
   }
-  // development & staging -> Cloudinary
-  return uploadToCloudinary(file, name, mime, folder);
 }
 
