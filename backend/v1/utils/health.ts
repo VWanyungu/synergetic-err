@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import type { RequestHandler } from 'express';
 import db from '../database/dbSetup.js';
-import redis from '../database/cacheSetup.js';
+import redis, { cacheProvider } from '../database/cacheSetup.js';
 import { isStorageConfigured } from './storage.js';
 
 const started = Date.now();
@@ -22,7 +22,7 @@ const timed = async (probe: () => Promise<Record<string, unknown> | void>): Prom
 
 // Reading the migrations folder on every probe would be wasteful; a minute-old answer is plenty.
 let migrations: { at: number; applied: number; pending: number } | null = null;
-const migrationState = async () => {
+const migrationState = async (): Promise<{ applied: number; pending: number }> => {
   if (!migrations || Date.now() - migrations.at > 60_000) {
     const [done, pending] = await db.migrate.list();
     migrations = { at: Date.now(), applied: done.length, pending: pending.length };
@@ -38,11 +38,11 @@ const migrationState = async () => {
  * Only counts and latencies are reported, never error text, hostnames or secrets.
  */
 export const health: RequestHandler = async (_req, res) => {
-  const [database, cache] = await Promise.all([
+  const [database, migrationCheck, cache] = await Promise.all([
     timed(async () => {
       await db.raw('select 1');
-      return { migrations: await migrationState() };
     }),
+    timed(migrationState),
     timed(async () => {
       await redis.set('health:ping', Date.now(), { ex: 10 });
       if ((await redis.get('health:ping')) === null) throw new Error('cache did not return what was written');
@@ -51,8 +51,8 @@ export const health: RequestHandler = async (_req, res) => {
   const storage: Check = { status: isStorageConfigured() ? 'ok' : 'not_configured', provider: process.env.NODE_ENV === 'production' ? 'r2' : 'cloudinary' };
   const mail: Check = { status: process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD ? 'ok' : 'not_configured' };
 
-  const pending = ((database.migrations as { pending?: number } | undefined)?.pending ?? 0) > 0;
-  const status = database.status === 'error' || cache.status === 'error' ? 'down' : storage.status !== 'ok' || mail.status !== 'ok' || pending ? 'degraded' : 'ok';
+  const pending = typeof migrationCheck.pending === 'number' && migrationCheck.pending > 0;
+  const status = database.status === 'error' || cache.status === 'error' ? 'down' : storage.status !== 'ok' || mail.status !== 'ok' || migrationCheck.status !== 'ok' || pending ? 'degraded' : 'ok';
 
   res.status(status === 'down' ? 503 : 200).json({
     status,
@@ -60,7 +60,7 @@ export const health: RequestHandler = async (_req, res) => {
     environment: process.env.NODE_ENV || 'development',
     uptimeSeconds: Math.round((Date.now() - started) / 1000),
     timestamp: new Date().toISOString(),
-    checks: { database, cache, storage, mail },
+    checks: { database: { ...database, migrations: migrationCheck }, cache: { ...cache, provider: cacheProvider }, storage, mail },
   });
 };
 

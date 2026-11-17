@@ -35,8 +35,8 @@ Answers in one call whether the app can do its job. No login and no `api-v` head
   "uptimeSeconds": 86412,
   "timestamp": "2026-11-16T13:48:55.769Z",
   "checks": {
-    "database": { "status": "ok", "latencyMs": 3, "migrations": { "applied": 14, "pending": 0 } },
-    "cache":    { "status": "ok", "latencyMs": 1 },
+    "database": { "status": "ok", "latencyMs": 3, "migrations": { "status": "ok", "latencyMs": 2, "applied": 14, "pending": 0 } },
+    "cache":    { "status": "ok", "latencyMs": 1, "provider": "local-redis" },
     "storage":  { "status": "ok", "provider": "r2" },
     "mail":     { "status": "ok" }
   }
@@ -46,18 +46,20 @@ Answers in one call whether the app can do its job. No login and no `api-v` head
 | `status` | HTTP | Meaning | Typical cause |
 |---|---|---|---|
 | `ok` | 200 | everything works | |
-| `degraded` | 200 | serving, but something needs attention | storage or mail not configured, or `migrations.pending` above 0 |
+| `degraded` | 200 | serving, but something needs attention | storage or mail not configured, migrations are pending, or migration status could not be checked |
 | `down` | 503 | the database or cache cannot be reached | Postgres or Redis stopped, wrong password, network |
 
 | Field | What it tells you |
 |---|---|
 | `version` | the commit the running image was built from. After a deploy it must equal what you released. |
+| `checks.database.migrations.status` | `ok` when migration history was read successfully, `error` when that check failed; this does not determine database connectivity. |
+| `checks.cache.provider` | `local-redis`, `upstash`, or `memory` (the development fallback when Upstash credentials are absent). |
 | `migrations.pending` | the code is newer than the database. This is what produced the `column ... does not exist` errors on staging. |
 | `latencyMs` | a slow database shows here before it becomes an outage |
 | `uptimeSeconds` | a small number you did not expect means the app restarted |
 | `storage`, `mail` | `not_configured` explains "uploads are not configured" and missing reset emails without reading logs |
 
-Each dependency check gives up after 2 seconds, so a hung database reports `down` instead of hanging the check. Only counts and timings are returned, never error text, hostnames or secrets.
+Database connectivity and migration status are checked separately. A failed migration-status lookup does not mean the database is unreachable: it marks the service `degraded`, while only a failed connectivity or cache check returns `down`. Each dependency check gives up after 2 seconds, so a hung dependency does not hang the endpoint. Only counts and timings are returned, never error text, hostnames or secrets.
 
 `GET /health/live` returns `{"status":"ok"}` while the process is running and checks nothing else. Caddy uses it, so a database outage does not look like a dead backend. The Docker healthcheck uses `/health`.
 
