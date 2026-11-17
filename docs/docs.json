@@ -2,13 +2,23 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Enterprise Risk Register",
-  "colors": { "primary": "#1f6b3a", "light": "#4c9a62", "dark": "#14522a" },
+  "colors": {
+    "primary": "#1f6b3a",
+    "light": "#4c9a62",
+    "dark": "#14522a"
+  },
   "navigation": {
     "tabs": [
       {
         "tab": "Documentation",
         "groups": [
-          { "group": "Get started", "pages": ["index", "quickstart"] },
+          {
+            "group": "Get started",
+            "pages": [
+              "index",
+              "quickstart"
+            ]
+          },
           {
             "group": "Guides",
             "pages": [
@@ -23,8 +33,33 @@
               "guides/profile"
             ]
           },
-          { "group": "Concepts", "pages": ["scoring"] },
-          { "group": "Help", "pages": ["faq"] }
+          {
+            "group": "Concepts",
+            "pages": [
+              "scoring"
+            ]
+          },
+          {
+            "group": "Help",
+            "pages": [
+              "faq"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Operations",
+        "groups": [
+          {
+            "group": "Running the register",
+            "pages": [
+              "operations/index",
+              "operations/deployment",
+              "operations/storage-and-backups",
+              "operations/monitoring",
+              "operations/runbook"
+            ]
+          }
         ]
       }
     ]

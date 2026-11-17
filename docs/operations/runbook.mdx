@@ -1,0 +1,134 @@
+---
+title: "Runbook"
+description: "Step-by-step responses for the incidents most likely to happen: site down, bad release, database problems, full disk, lost server, and a restore log."
+---
+
+Work from the top: confirm, contain, fix, then write down what happened. All commands run on the VPS as `deploy` in `/var/www/synergetic-err` unless noted.
+
+## First five minutes for any alert
+
+```bash
+docker compose ps                         # which service is not "running (healthy)"
+docker compose logs --tail 100 backend    # the last errors
+docker compose exec backend wget -qO- http://localhost:8080/health   # what the app itself reports
+df -h / && free -m                        # disk and memory
+```
+
+| What you see | Go to |
+|---|---|
+| nothing answers, SSH works | [Site is down](#site-is-down) |
+| it broke right after a deploy | [Bad release](#bad-release) |
+| backend errors mention the database | [Database problems](#database-problems) |
+| `No space left on device` | [Disk is full](#disk-is-full) |
+| SSH does not answer | [Lost server](#lost-server) |
+| users cannot sign in, everything else fine | [Sign-in problems](#sign-in-problems) |
+
+## Site is down
+
+1. Check Cloudflare first. A 52x error means Cloudflare is fine and the VPS is not answering; a Cloudflare error page means the problem is on their side (see cloudflarestatus.com).
+2. `docker compose ps`. If a service is exited, `docker compose up -d` and watch its logs.
+3. If the proxy is the problem: `docker logs --tail 50 caddy`, then `docker exec caddy caddy validate --config /etc/caddy/Caddyfile` and `docker restart caddy`.
+4. If the host is out of memory, `docker compose restart backend` and check `docker stats`.
+5. Still down after 15 minutes: roll back (next section) before diagnosing further.
+
+## Bad release
+
+1. Find the last good commit SHA in GitHub Actions.
+2. Roll the code back:
+
+```bash
+IMAGE_TAG=<good-sha> docker compose up -d
+```
+
+3. If the release included a migration that changed or dropped data, also [restore the database](#restore-the-database) from the backup taken before the release. If the migration only added things, leave the database alone.
+4. Open an issue with the failing SHA and what broke. Do not redeploy it until fixed.
+
+## Database problems
+
+| Symptom | Check | Action |
+|---|---|---|
+| `too many connections` | `docker compose exec db psql -U $DB_USER -c "select count(*) from pg_stat_activity;"` | `docker compose restart backend`, then look for a stuck request |
+| `connection refused` | `docker compose ps db` | `docker compose up -d db`, wait for healthy |
+| a migration failed mid-deploy | `docker compose logs backend`, then `docker compose exec backend bun run node_modules/knex/bin/cli.js migrate:status --knexfile knexfile.ts` | fix the migration and redeploy. Knex runs each migration in a transaction, so a failed one leaves nothing half-applied. |
+| `column ... does not exist` | the image is older than the database (or the reverse) | deploy the matching image. This happened on staging when the database was migrated ahead of the running code. |
+| corrupted or lost data | stop the backend | [Restore the database](#restore-the-database) |
+
+## Restore the database
+
+Do this only after agreeing it with the business owner: everything entered since the backup is lost.
+
+```bash
+# 1. Stop writes
+docker compose stop backend frontend
+
+# 2. Take a safety copy of what is there now, even if damaged
+docker compose exec -T db pg_dump -U "$DB_USER" -d "$DB_NAME" | gzip > /tmp/pre-restore-$(date -u +%Y%m%dT%H%M%SZ).sql.gz
+
+# 3. Fetch the backup you chose
+rclone copyto r2:err-backups/daily/err-<stamp>.sql.gz /tmp/restore.sql.gz
+
+# 4. Replace the database
+docker compose exec -T db psql -U "$DB_USER" -d postgres -c "DROP DATABASE \"$DB_NAME\" WITH (FORCE);"
+docker compose exec -T db psql -U "$DB_USER" -d postgres -c "CREATE DATABASE \"$DB_NAME\";"
+gunzip -c /tmp/restore.sql.gz | docker compose exec -T db psql -U "$DB_USER" -d "$DB_NAME"
+
+# 5. Bring the app back on an image that matches the restored schema, then check
+IMAGE_TAG=<sha-matching-the-backup> docker compose up -d
+docker compose exec backend wget -qO- http://localhost:8080/health
+```
+
+If the backup is older than the current image, the image's migrations run on start and bring the schema forward. If a release was rolled back, use that release's image.
+
+Afterwards: sign in, open the dashboard and a recent risk, and tell users which window of changes was lost (from the backup time to the incident).
+
+## Disk is full
+
+```bash
+df -h /
+docker system df
+docker image prune -af          # unused images
+docker builder prune -af        # build cache
+sudo journalctl --vacuum-size=200M
+sudo du -xh /var/lib/docker/containers --max-depth=2 | sort -h | tail   # oversized container logs
+```
+
+Container logs are the usual culprit when rotation was not configured. Add the `logging:` limits from the [deployment page](/operations/deployment#before-the-first-deploy). If the database volume itself is large, check for bloat before buying disk.
+
+## Sign-in problems
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| "This account is deactivated" | an Admin deactivated the user | Admin page, reactivate |
+| "Password does not match" for everyone | secrets were rotated, or the database was restored from before a password change | have users use **Forgot password?** |
+| Reset email never arrives | Gmail app password revoked or `GMAIL_*` missing | check `docker compose logs backend`, create a new app password, update `.env`, `docker compose up -d backend` |
+| Signed out repeatedly | Redis was restarted and lost the revoked-token and session markers, or the clock drifted | check `docker compose ps redis`, `timedatectl` |
+| Everyone signed out at once | an auth secret changed | expected after rotation; users sign in again |
+
+## Lost server
+
+The server can be rebuilt from three things: the repo and images (GitHub, Docker Hub), the saved `.env` and nginx config (password manager), and the latest backup (R2).
+
+1. Create a new VPS and follow [server setup](/operations/deployment#server-setup), including `docker network create caddy`.
+2. Restore `.env` and the Caddyfile from the password manager.
+3. `docker compose pull && docker compose up -d`, then restore the database as above.
+4. Point the Cloudflare `A` records at the new IP. Attachments are in R2 and need no action.
+5. Confirm sign-in and an attachment link, then update the `VPS_HOST` GitHub secret so deploys reach the new server.
+
+Target: back within 4 hours. Time the first rehearsal and record it.
+
+## After any incident
+
+Write a short note within two working days:
+
+- What users saw, from when to when
+- The cause, in one or two sentences
+- What fixed it
+- One change that would have prevented or shortened it, with an owner
+
+## Log
+
+Keep a running record here (or in the team tracker) so patterns show up.
+
+| Date | Type (drill, incident, restore) | Result | Time taken | By |
+|---|---|---|---|---|
+| | | | | |

@@ -1,0 +1,202 @@
+---
+title: "Monitoring"
+description: "Plan for watching the register: what the health and metrics endpoints report, uptime checks, host and container metrics, alert thresholds, logs and the routine that keeps it honest."
+---
+
+The standard Synergetic tools apply: **Uptime Kuma** for uptime, **Prometheus** and **Grafana** for metrics, and **Discord** or **MS Teams** for alerts.
+
+## What is watched
+
+Build these in order. Each layer is useful on its own, so stop where the cost stops being worth it.
+
+| Layer | Tool | Answers |
+|---|---|---|
+| 1. Is it up and healthy? | Uptime Kuma on `/health` | can users reach it, can it reach its database and cache, is it the version I released |
+| 2. Did the backup run? | Uptime Kuma push monitor | is last night's backup in R2 |
+| 3. Is the server healthy? | Prometheus with node-exporter and cAdvisor | disk, memory, CPU, container restarts |
+| 4. Is the data layer healthy? | Postgres and Redis exporters | connections, database size, Redis memory |
+| 5. Is the app healthy? | Prometheus scraping the backend's `/metrics` | error rate, slow screens, sign-in failures, upload failures |
+
+<Warning>Run Uptime Kuma **off** the VPS it watches, on another small server or a free tier. A monitor on the same machine goes down with it and says nothing.</Warning>
+
+## The backend's own signals
+
+The backend reports on itself through two endpoints. Layers 1 and 5 are built on them, so know what they say.
+
+### `GET /health`
+
+Answers in one call whether the app can do its job. No login and no `api-v` header needed.
+
+```json
+{
+  "status": "ok",
+  "version": "9f3c2ab41d7e...",
+  "environment": "production",
+  "uptimeSeconds": 86412,
+  "timestamp": "2026-11-16T13:48:55.769Z",
+  "checks": {
+    "database": { "status": "ok", "latencyMs": 3, "migrations": { "applied": 14, "pending": 0 } },
+    "cache":    { "status": "ok", "latencyMs": 1 },
+    "storage":  { "status": "ok", "provider": "r2" },
+    "mail":     { "status": "ok" }
+  }
+}
+```
+
+| `status` | HTTP | Meaning | Typical cause |
+|---|---|---|---|
+| `ok` | 200 | everything works | |
+| `degraded` | 200 | serving, but something needs attention | storage or mail not configured, or `migrations.pending` above 0 |
+| `down` | 503 | the database or cache cannot be reached | Postgres or Redis stopped, wrong password, network |
+
+| Field | What it tells you |
+|---|---|
+| `version` | the commit the running image was built from. After a deploy it must equal what you released. |
+| `migrations.pending` | the code is newer than the database. This is what produced the `column ... does not exist` errors on staging. |
+| `latencyMs` | a slow database shows here before it becomes an outage |
+| `uptimeSeconds` | a small number you did not expect means the app restarted |
+| `storage`, `mail` | `not_configured` explains "uploads are not configured" and missing reset emails without reading logs |
+
+Each dependency check gives up after 2 seconds, so a hung database reports `down` instead of hanging the check. Only counts and timings are returned, never error text, hostnames or secrets.
+
+`GET /health/live` returns `{"status":"ok"}` while the process is running and checks nothing else. Caddy uses it, so a database outage does not look like a dead backend. The Docker healthcheck uses `/health`.
+
+### `GET /metrics`
+
+Prometheus text format, built with `prom-client`. It needs `Authorization: Bearer <METRICS_TOKEN>`, and in production with no token set it serves nothing. Caddy answers 404 for it on the public hostname, so only containers on the private network can scrape it.
+
+| Metric | Type | Labels | Answers |
+|---|---|---|---|
+| `http_requests_total` | counter | method, route, status | request rate and error rate per route |
+| `http_request_duration_seconds` | histogram | method, route, status | which screens are slow |
+| `http_requests_in_flight` | gauge | | whether requests are piling up |
+| `auth_login_attempts_total` | counter | result: `success`, `bad_password`, `unknown_user`, `deactivated` | credential stuffing, lockouts |
+| `file_uploads_total` | counter | provider, result | uploads failing silently |
+| `db_pool_connections` | gauge | state: `used`, `free`, `pending_acquire`, `pending_create` | connection exhaustion |
+| `risks_total` | gauge | status, band | size and mix of the register, read live |
+| `users_total` | gauge | status | active and deactivated accounts |
+| `mitigation_actions_overdue` | gauge | | overdue actions |
+| `process_*`, `nodejs_*` | various | | CPU, memory, event-loop lag, garbage collection |
+
+The `route` label is the route pattern (`/risks/:id`), never the real URL, so ids do not multiply the series. The business gauges run three small aggregate queries per scrape, which is negligible at a 15 to 60 second interval.
+
+## Layer 1: uptime checks
+
+Create these in Uptime Kuma, checking every 60 seconds with 2 retries before alerting.
+
+| Monitor | Type | Target | Pass when |
+|---|---|---|---|
+| Site | HTTPS keyword | `https://err.example.com/login` | 200 and the word `Welcome` |
+| API health | HTTPS json-query | `https://api.err.example.com/health` | 200 and `status` is not `down` |
+| API degraded | HTTPS json-query | the same URL | `status` equals `ok` (alert as a **ticket**) |
+| TLS certificate | certificate expiry | both hostnames | alert 21 days before expiry |
+| Domain | domain expiry | `example.com` | alert 30 days before |
+
+## Layer 2: backup heartbeat
+
+Create a **Push** monitor in Uptime Kuma named `Nightly backup` with a 26-hour interval. Put its push URL in the VPS `.env` as `BACKUP_HEARTBEAT_URL`. The backup script calls it only after the upload succeeds (see [Storage and backups](/operations/storage-and-backups)), so a missed or failed backup raises an alert the next morning, not during an emergency.
+
+## Layers 3 to 5: Prometheus and Grafana
+
+Run the stack from its own file, `docker-compose.monitoring.yml`, so it can be stopped without touching the app. Attach Prometheus to the app's private `err-network` so it can reach `err-backend:8080`, and put Grafana on the `caddy` network so Caddy can serve it behind a login.
+
+| Component | Purpose |
+|---|---|
+| `prometheus` | scrapes and stores metrics, 15 days retention |
+| `grafana` | dashboards |
+| `node-exporter` | host CPU, memory, disk, network |
+| `cadvisor` | per-container CPU, memory, restarts |
+| `postgres-exporter` | connections, locks, database size |
+| `redis-exporter` | memory, evictions, clients |
+| `alertmanager` | sends alerts to Discord or Teams |
+
+None of these publish ports to the internet. Import the community dashboards for Node Exporter Full (ID 1860), cAdvisor, PostgreSQL and Redis instead of building them.
+
+Scrape the backend:
+
+```yaml
+scrape_configs:
+  - job_name: err-backend
+    metrics_path: /metrics
+    authorization: { type: Bearer, credentials_file: /etc/prometheus/err-metrics-token }
+    static_configs: [{ targets: ["err-backend:8080"] }]
+```
+
+Useful queries:
+
+```promql
+# 5xx share of requests, last 10 minutes
+sum(rate(http_requests_total{status=~"5.."}[10m])) / sum(rate(http_requests_total[10m]))
+
+# p95 latency per route
+histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket[10m])))
+
+# failed sign-ins per minute
+sum(rate(auth_login_attempts_total{result=~"bad_password|unknown_user"}[5m])) * 60
+
+# connection pool under pressure
+db_pool_connections{state="pending_acquire"} > 0
+```
+
+## Alerts
+
+Two severities, so people trust them.
+
+| Severity | Goes to | Meaning |
+|---|---|---|
+| **Page** | the alerts channel with a mention, plus a phone notification for the on-call | users are affected now |
+| **Ticket** | the same channel, no mention, business hours | becomes a page if ignored |
+
+| Alert | Condition | Severity |
+|---|---|---|
+| Site or API unreachable | check fails 3 times (3 minutes) | Page |
+| Health `down` | `/health` returns 503 for 2 minutes | Page |
+| Health `degraded` | not `ok` for 30 minutes (for example a pending migration) | Ticket |
+| Wrong version after deploy | the smoke test fails | Page |
+| Container restarting | more than 3 restarts in 15 minutes | Page |
+| Error rate | 5xx over 2% of requests for 10 minutes | Page |
+| Slow screens | p95 over 2 seconds on any route for 15 minutes | Ticket |
+| Disk nearly full | over 85% used | Ticket, Page at 95% |
+| Memory pressure | over 90% for 10 minutes | Ticket |
+| CPU saturated | over 90% for 15 minutes | Ticket |
+| Backup missing | no heartbeat for 26 hours | Ticket, Page if two nights are missed |
+| Upload failures | any `file_uploads_total{result="error"}` increase in 15 minutes | Ticket |
+| Pool exhaustion | `pending_acquire` above 0 for 5 minutes | Ticket |
+| Failed sign-ins | over 30 a minute across the app | Ticket |
+| Certificate expiring | under 21 days | Ticket |
+
+Test every alert once by causing it (stop the backend container, fill a temp file system) before relying on it.
+
+### Delivery
+
+Create a webhook in the Discord channel (Channel settings, Integrations, Webhooks) or a Teams **Workflows** webhook, and add it to Uptime Kuma and Alertmanager as a notification. Use one channel, `#err-alerts`, so everything lands in one place.
+
+## Logs
+
+| Source | Where | Kept |
+|---|---|---|
+| Backend and frontend | `docker compose logs`, JSON files rotated at 10 MB x 5 per container | about a week |
+| Backend access log | `morgan` in `combined` format, in the backend's output | same |
+| Caddy | `docker logs caddy`. Add a `log` block to the Caddyfile for JSON access logs. | same |
+| Backup job | `/var/log/err-backup.log`, rotated weekly | 4 weeks |
+
+```bash
+docker compose logs --since 30m backend | grep -i error
+docker compose logs --tail 200 -f backend
+docker stats --no-stream
+```
+
+Add Loki and Promtail only if searching across days becomes a regular need. Never log request bodies: they hold passwords on the sign-in route and base64 files on the risk routes.
+
+The app also keeps records people can see, which help when diagnosing: each risk's **Activity** tab (every edit, review, transfer and archive request, with who and when), **Last sign-in** on the Admin page, and the Notifications page.
+
+## Routine
+
+| When | Check | Owner |
+|---|---|---|
+| Weekly | Grafana host dashboard: disk trend, memory, restarts, overdue actions | on-call |
+| Weekly | 7 backup files exist in `r2:err-backups/daily` | on-call |
+| Monthly | restore drill into a scratch database | on-call |
+| Monthly | `apt list --upgradable`, Docker image updates, dependency audit | on-call |
+| Quarterly | review alert noise: delete or retune any alert nobody acted on | team |
+| Quarterly | rotate the R2 tokens, the deploy SSH key, `METRICS_TOKEN` and the JWT secrets (rotating the JWT secrets signs everyone out) | team |
