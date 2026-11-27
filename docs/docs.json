@@ -16,33 +16,60 @@
             "group": "Get started",
             "pages": [
               "index",
-              "quickstart"
+              "quickstart",
+              "roles/index"
             ]
           },
           {
-            "group": "Guides",
+            "group": "Common flows",
             "pages": [
-              "guides/dashboard",
-              "guides/risk-registers",
-              "guides/creating-a-risk",
-              "guides/risk-detail",
-              "guides/heat-map",
-              "guides/reports",
-              "guides/notifications",
-              "guides/administration",
-              "guides/profile"
+              "common/signing-in",
+              "common/resetting-password",
+              "common/navigating",
+              "common/registers",
+              "common/risk-detail",
+              "common/notifications",
+              "common/profile"
             ]
           },
           {
-            "group": "Concepts",
+            "group": "Risk Champion / Department Lead",
             "pages": [
-              "scoring"
+              "roles/department/overview",
+              "roles/department/creating-a-risk",
+              "roles/department/mitigation-and-review",
+              "roles/department/closing-and-archiving"
             ]
           },
           {
-            "group": "Help",
+            "group": "Division Lead",
             "pages": [
-              "faq"
+              "roles/division-lead/overview"
+            ]
+          },
+          {
+            "group": "Risk Officer",
+            "pages": [
+              "roles/risk-officer/overview",
+              "roles/risk-officer/oversight",
+              "roles/risk-officer/archive-requests"
+            ]
+          },
+          {
+            "group": "Admin",
+            "pages": [
+              "roles/admin/overview",
+              "roles/admin/managing-users"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/scoring",
+              "reference/dashboard",
+              "reference/heat-map",
+              "reference/reports",
+              "reference/faq"
             ]
           }
         ]
@@ -63,5 +90,51 @@
         ]
       }
     ]
-  }
+  },
+  "redirects": [
+    {
+      "source": "/scoring",
+      "destination": "/reference/scoring"
+    },
+    {
+      "source": "/faq",
+      "destination": "/reference/faq"
+    },
+    {
+      "source": "/guides/dashboard",
+      "destination": "/reference/dashboard"
+    },
+    {
+      "source": "/guides/heat-map",
+      "destination": "/reference/heat-map"
+    },
+    {
+      "source": "/guides/reports",
+      "destination": "/reference/reports"
+    },
+    {
+      "source": "/guides/risk-registers",
+      "destination": "/common/registers"
+    },
+    {
+      "source": "/guides/risk-detail",
+      "destination": "/common/risk-detail"
+    },
+    {
+      "source": "/guides/notifications",
+      "destination": "/common/notifications"
+    },
+    {
+      "source": "/guides/profile",
+      "destination": "/common/profile"
+    },
+    {
+      "source": "/guides/creating-a-risk",
+      "destination": "/roles/department/creating-a-risk"
+    },
+    {
+      "source": "/guides/administration",
+      "destination": "/roles/admin/managing-users"
+    }
+  ]
 }
