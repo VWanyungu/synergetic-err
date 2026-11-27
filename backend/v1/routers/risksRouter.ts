@@ -3,7 +3,8 @@ import Joi from 'joi';
 import type { Knex } from 'knex';
 import db from '../database/dbSetup.js';
 import { sendRouteError } from '../utils/errors.js';
-import { denyDivisionLead, scopedDepartment, scopedDivision } from '../utils/scope.js';
+import { denyDivisionLead, scopedDepartment, scopedDivision, scopes } from '../utils/scope.js';
+import { Cache } from '../database/utils/cache.js';
 
 const router = express.Router();
 
@@ -21,6 +22,15 @@ export const RISK_CATEGORIES = [
   'ESG',
   'Project',
 ] as const;
+
+export const CATEGORIES_KEY = 'risk-categories';
+
+/** The built-in categories plus any custom ones in use. The distinct scan of `risks` is cached; creating or editing a risk clears it. */
+export const allCategories = () =>
+  Cache.remember(CATEGORIES_KEY, 300, async () => {
+    const cats = await db('risks').distinct('category').orderBy('category').pluck('category');
+    return Array.from(new Set([...RISK_CATEGORIES, ...cats]));
+  });
 
 const QUICK = ['noMitigation', 'dueForReview', 'myRisks', 'archived', 'highRisk', 'unassigned', 'overdueActions', 'changedThisWeek'] as const;
 export const csv = (valid: readonly string[]) =>
@@ -177,8 +187,7 @@ router.get('/register', async (req, res) => {
   const f = value as RegisterFilters & { sort: string; page: number; perPage: number };
   const userId = req.user!.userId;
   // A Risk Champion or Department Lead only ever sees their own department's register; a Division Lead only their division's.
-  const own = await scopedDepartment(userId);
-  const ownDivision = await scopedDivision(userId);
+  const { department: own, division: ownDivision } = await scopes(userId);
   if (own) {
     f.departmentId = own;
   }
@@ -188,25 +197,24 @@ router.get('/register', async (req, res) => {
   }
 
   try {
-    const [totalRow] = await applyFilters(base(), f, userId).count<{ count: string }[]>('r.id as count');
     const rating = ratingSql(f.month);
     const order = orderFor(f.sort, rating);
-    const items = await applyFilters(base(), f, userId)
-      .orderBy(order)
-      .limit(f.perPage)
-      .offset((f.page - 1) * f.perPage)
-      .select(registerColumns(rating));
-
-    const departments: { id: string; count: number }[] = await applyFilters(base(), f, userId, 'department')
-      .groupBy('d.id')
-      .select('d.id', db.raw('count(*)::int as count'));
-    const ratings = await applyFilters(base(), f, userId, 'rating').select(
-      db.raw(`count(*) filter (where ${rating} >= 15)::int as high`),
-      db.raw(`count(*) filter (where ${rating} between 9 and 14)::int as medium`),
-      db.raw(`count(*) filter (where ${rating} <= 8)::int as low`),
-    );
-    const cats = await db('risks').distinct('category').orderBy('category').pluck('category');
-    const categories = Array.from(new Set([...RISK_CATEGORIES, ...cats]));
+    // Independent of each other, so they run at the same time rather than one after another.
+    const [[totalRow], items, departments, ratings, categories] = await Promise.all([
+      applyFilters(base(), f, userId).count<{ count: string }[]>('r.id as count'),
+      applyFilters(base(), f, userId)
+        .orderBy(order)
+        .limit(f.perPage)
+        .offset((f.page - 1) * f.perPage)
+        .select(registerColumns(rating)),
+      applyFilters(base(), f, userId, 'department').groupBy('d.id').select('d.id', db.raw('count(*)::int as count')) as Promise<{ id: string; count: number }[]>,
+      applyFilters(base(), f, userId, 'rating').select(
+        db.raw(`count(*) filter (where ${rating} >= 15)::int as high`),
+        db.raw(`count(*) filter (where ${rating} between 9 and 14)::int as medium`),
+        db.raw(`count(*) filter (where ${rating} <= 8)::int as low`),
+      ),
+      allCategories(),
+    ]);
 
     res.status(200).json({
       status: 'success',
@@ -286,14 +294,13 @@ router.get('/divisions', async (req, res) => {
 // GET /risks/form-options — what the New risk form needs besides departments.
 router.get('/form-options', async (req, res) => {
   try {
-    const [cats, divisions, owners] = await Promise.all([
-      db('risks').distinct('category').orderBy('category'),
+    const [categories, divisions, owners] = await Promise.all([
+      allCategories(),
       db('divisions').select('id', 'name', 'code').orderBy('name'),
       db('users')
         .select('id', db.raw(`trim(concat(first_name, ' ', last_name)) as name`))
         .orderBy('first_name'),
     ]);
-    const categories = Array.from(new Set([...RISK_CATEGORIES, ...cats.map((c) => c.category)]));
     res.status(200).json({
       status: 'success',
       data: { categories, divisions, owners, currentUserId: req.user?.userId ?? null, scopedDepartmentId: await scopedDepartment(req.user!.userId) },
@@ -384,6 +391,7 @@ router.post('/', denyDivisionLead, async (req, res) => {
       }
       return row;
     });
+    await Cache.del(CATEGORIES_KEY);
     res.status(201).json({ status: 'success', data: risk, message: 'Risk created successfully' });
   } catch (err) {
     if ((err as { status?: number }).status === 400) {

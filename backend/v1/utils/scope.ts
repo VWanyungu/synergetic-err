@@ -33,6 +33,20 @@ export async function scopedDivision(userId: string): Promise<string | null> {
   return !unrestricted && roles.includes('Division Lead') ? (user?.division_id ?? NO_DEPARTMENT) : null;
 }
 
+/** Both scopes from a single user and roles lookup (the register needs both; calling the two functions above reads them twice). */
+export async function scopes(userId: string): Promise<{ department: string | null; division: string | null }> {
+  const [user, roles] = await Promise.all([
+    db('users').where({ id: userId }).first('department_id', 'division_id'),
+    db('roles').where({ user_id: userId }).whereNull('revoked_at').pluck('role'),
+  ]);
+  const inDepartment = !roles.includes('Admin') && !roles.includes('Risk Officer');
+  const departmentRole = roles.some((r) => DEPARTMENT_ROLES.includes(r));
+  return {
+    department: inDepartment && departmentRole ? (user?.department_id ?? NO_DEPARTMENT) : null,
+    division: inDepartment && !departmentRole && roles.includes('Division Lead') ? (user?.division_id ?? NO_DEPARTMENT) : null,
+  };
+}
+
 /** Express guard: a Division Lead gets a 403 here (dashboard, reports, heat map and so on are not theirs). */
 export const denyDivisionLead: import('express').RequestHandler = async (req, res, next) => {
   try {

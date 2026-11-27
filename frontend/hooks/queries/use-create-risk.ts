@@ -24,12 +24,16 @@ export interface NewRisk {
 }
 
 export const useRiskFormOptions = () =>
-  useQuery({ queryKey: ["risk-form-options"], queryFn: () => api<FormOptions>("/risks/form-options") });
+  useQuery({ queryKey: ["risk-form-options"], queryFn: () => api<FormOptions>("/risks/form-options"), staleTime: 5 * 60_000 });
 
 export const useCreateRisk = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: NewRisk) => api<{ id: string; code: string }>("/risks", { method: "POST", body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["risks"] }),
+    onSuccess: () => {
+      // A new risk can introduce a category, so the form options go stale too.
+      qc.invalidateQueries({ queryKey: ["risk-form-options"] });
+      return qc.invalidateQueries({ queryKey: ["risks"] });
+    },
   });
 };

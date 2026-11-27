@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Card, OVERLINE } from "@/components/dashboard/card";
-import type { DashboardData } from "@/lib/dashboard";
+import type { DashboardSummary } from "@/lib/dashboard";
 import { cn } from "@/lib/utils";
 
 const pct = (n: number, total: number) => (total ? Math.round((n / total) * 100) : 0);
@@ -53,7 +53,7 @@ function StatusCard({
   );
 }
 
-export function StatusCards({ data }: { data: DashboardData }) {
+export function StatusCards({ data }: { data: DashboardSummary }) {
   const { review, coverage } = data;
   // Each card opens the register behind it, for the department being viewed, with its filter already on.
   const register = `/risks/register/${data.departmentId || "all"}`;

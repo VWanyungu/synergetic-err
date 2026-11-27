@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Smile } from "lucide-react";
 import { Alert } from "@/components/auth/auth-ui";
@@ -15,7 +15,7 @@ import { currentMonth, DateFilter, monthLabel } from "@/components/risk-register
 import { Dropdown } from "@/components/ui/dropdown";
 import { DEFAULT_FILTERS, type RegisterFilters } from "@/hooks/queries/use-risk-register";
 import { usePeriod } from "@/contexts/period-context";
-import { useDashboard } from "@/hooks/queries/use-dashboard";
+import { useDashboardSummary, useDashboardTop } from "@/hooks/queries/use-dashboard";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -37,9 +37,12 @@ export default function DashboardPage() {
   const { month, setMonth } = usePeriod();
   const [departmentId, setDepartmentId] = useState("");
   const [table, setTable] = useState<RegisterFilters>({ ...DEFAULT_FILTERS, sort: "rating_desc", status: [] });
-  const dashboard = useDashboard(month, departmentId, table);
+  const dashboard = useDashboardSummary(month, departmentId);
+  const top = useDashboardTop(month, departmentId, table);
   const me = useMe();
   const data = dashboard.data;
+  // The report needs both halves, so its button waits for the slower one.
+  const full = useMemo(() => (data && top.data ? { ...data, top: top.data.top } : undefined), [data, top.data]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,7 +60,7 @@ export default function DashboardPage() {
             onSelect={setDepartmentId}
           />
           <DateFilter label="Period" empty={monthLabel(currentMonth())} month={month} onApply={setMonth} />
-          {data && <ReportButton data={data} preparedBy={me.data ? `${me.data.firstName} ${me.data.lastName}`.trim() : ""} />}
+          {full && <ReportButton data={full} preparedBy={me.data ? `${me.data.firstName} ${me.data.lastName}`.trim() : ""} />}
         </div>
       </header>
 
@@ -86,8 +89,8 @@ export default function DashboardPage() {
               </Link>
             </div>
             <RiskTable
-              data={{ items: data.top, total: data.top.length, page: 1, perPage: data.top.length, facets: { departments: {}, ratings: { high: 0, medium: 0, low: 0 }, categories: [] } }}
-              loading={false}
+              data={{ items: top.data?.top ?? [], total: top.data?.top.length ?? 0, page: 1, perPage: top.data?.top.length ?? 0, facets: { departments: {}, ratings: { high: 0, medium: 0, low: 0 }, categories: [] } }}
+              loading={!top.data}
               filters={{ ...table, departmentId: data.departmentId }}
               onChange={({ departmentId: d, ...patch }) => {
                 if (d !== undefined) setDepartmentId(d);

@@ -6,6 +6,8 @@ import { sendRouteError } from '../utils/errors.js';
 import { uploadToCloudinary, isStorageConfigured } from '../utils/cloudinary.js';
 import { R2_PRIVATE_PREFIX, signedDownloadUrl } from '../utils/storage.js';
 import { DEPARTMENT_ROLES, scopedDivision } from '../utils/scope.js';
+import { Cache } from '../database/utils/cache.js';
+import { CATEGORIES_KEY } from './risksRouter.js';
 
 const router = express.Router();
 
@@ -81,12 +83,11 @@ const monthOf = (d = new Date()) => `${d.getUTCFullYear()}-${String(d.getUTCMont
 router.get('/:id', async (req, res) => {
   try {
     const id = check<string>(uuid, req.params.id);
-    const risk = await loadRisk(id);
-    const v = await viewer(req);
-    const pendingArchive = await db('archive_requests as a').join('users as u', 'u.id', 'a.requested_by').where({ 'a.risk_id': id, 'a.status': 'pending' }).first('a.id', 'a.created_at', 'u.first_name', 'u.last_name');
-    const [dept, owner, divisions, counts, actors, versions, transfers] = await Promise.all([
-      db('departments').where({ id: risk.department_id }).first('id', 'name'),
-      risk.owner_id ? db('users').where({ id: risk.owner_id }).first('id', 'first_name', 'last_name', 'department_id') : null,
+    // Two rounds instead of fifteen in a row: everything that needs only the id, then everything that needs the risk's owner or author.
+    const [risk, v, pendingArchive, divisions, counts, actors, versions, transfers] = await Promise.all([
+      loadRisk(id),
+      viewer(req),
+      db('archive_requests as a').join('users as u', 'u.id', 'a.requested_by').where({ 'a.risk_id': id, 'a.status': 'pending' }).first('a.id', 'a.created_at', 'u.first_name', 'u.last_name'),
       db('risk_divisions as rd').join('divisions as d', 'd.id', 'rd.division_id').where('rd.risk_id', id).select('d.id', 'd.name', 'd.code').orderBy('d.name'),
       db.raw(
         `select (select count(*) from risk_activity where risk_id = ? and type = 'comment')::int as comments,
@@ -99,11 +100,20 @@ router.get('/:id', async (req, res) => {
       db('risk_description_versions as v').join('users as u', 'u.id', 'v.edited_by').where('v.risk_id', id).orderBy('v.created_at', 'desc').select('u.first_name', 'u.last_name', 'v.created_at'),
       db('risk_activity as a').leftJoin('users as u', 'u.id', 'a.actor_id').where({ 'a.risk_id': id, 'a.type': 'transferred' }).orderBy('a.created_at', 'desc').select('a.data', 'a.created_at', 'u.first_name', 'u.last_name'),
     ]);
-    const ownerRoles = owner ? await db('roles').where({ user_id: owner.id }).whereNull('revoked_at').pluck('role') : [];
-    const ownerDept = owner?.department_id ? (await db('departments').where({ id: owner.department_id }).first('name'))?.name : null;
-    const createdRow = await db('risks').where({ id }).first('created_at', 'last_reviewed_at', 'created_by');
-    const createdBy = createdRow.created_by ? fullName(await db('users').where({ id: createdRow.created_by }).first('first_name', 'last_name')) : null;
-    const loggedByRole = createdRow.created_by ? roleLabel(await db('roles').where({ user_id: createdRow.created_by }).whereNull('revoked_at').pluck('role')) : null;
+    const createdByRow = (risk as unknown as { created_by: string | null; created_at: Date; last_reviewed_at: Date | null });
+    const [dept, owner, ownerRoles, author, authorRoles] = await Promise.all([
+      db('departments').where({ id: risk.department_id }).first('id', 'name'),
+      risk.owner_id
+        ? db('users as u').leftJoin('departments as od', 'od.id', 'u.department_id').where('u.id', risk.owner_id).first('u.id', 'u.first_name', 'u.last_name', 'od.name as department_name')
+        : null,
+      risk.owner_id ? db('roles').where({ user_id: risk.owner_id }).whereNull('revoked_at').pluck('role') : [],
+      createdByRow.created_by ? db('users').where({ id: createdByRow.created_by }).first('first_name', 'last_name') : null,
+      createdByRow.created_by ? db('roles').where({ user_id: createdByRow.created_by }).whereNull('revoked_at').pluck('role') : [],
+    ]);
+    const ownerDept = owner?.department_name ?? null;
+    const createdRow = createdByRow;
+    const createdBy = fullName(author);
+    const loggedByRole = createdByRow.created_by ? roleLabel(authorRoles) : null;
     ok(
       res,
       {
@@ -293,6 +303,7 @@ router.patch('/:id', async (req, res) => {
       }
       await t('risks').where({ id: risk.id }).update(set);
     });
+    if (b.category !== undefined) await Cache.del(CATEGORIES_KEY);
     ok(res, null, 'Risk updated successfully');
   } catch (err) {
     fail(res, err);
