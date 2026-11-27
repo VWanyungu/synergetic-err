@@ -1,5 +1,5 @@
 import { Card } from "@/components/dashboard/card";
-import type { BreakdownRow, DashboardData } from "@/lib/dashboard";
+import { PLAN_STATUS, type BreakdownRow, type DashboardData } from "@/lib/dashboard";
 import { LEVEL_TEXT, riskLevel } from "@/lib/risk";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +20,7 @@ function Facts({ rows }: { rows: [string, string][] }) {
   return (
     <dl className="overflow-hidden rounded-xl border border-line">
       {rows.map(([k, v]) => (
-        <div key={k} className="grid grid-cols-[200px_1fr] border-b border-line last:border-b-0">
+        <div key={k} className="grid grid-cols-[130px_1fr] border-b sm:grid-cols-[200px_1fr] border-line last:border-b-0">
           <dt className="bg-brand-bg px-4 py-3 text-[14px] font-medium text-brand-text-muted">{k}</dt>
           <dd className="px-4 py-3 text-[14px] font-medium">{v}</dd>
         </div>
@@ -31,8 +31,9 @@ function Facts({ rows }: { rows: [string, string][] }) {
 
 function Breakdown({ name, rows }: { name: string; rows: BreakdownRow[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-line">
-      <div className={cn(HEAD, "grid grid-cols-[1fr_72px_72px_72px_72px] gap-2 bg-subtle px-4 py-3")}>
+    <div className="overflow-x-auto rounded-xl border border-line">
+     <div className="min-w-[480px]">
+      <div className={cn(HEAD, "grid grid-cols-[minmax(150px,1fr)_72px_72px_72px_72px] gap-2 bg-subtle px-4 py-3")}>
         <span>{name}</span>
         <span className="text-center">High</span>
         <span className="text-center">Medium</span>
@@ -40,7 +41,7 @@ function Breakdown({ name, rows }: { name: string; rows: BreakdownRow[] }) {
         <span className="text-center">Total</span>
       </div>
       {rows.map((r) => (
-        <div key={r.id} className="grid grid-cols-[1fr_72px_72px_72px_72px] items-center gap-2 border-t border-line px-4 py-2.5 text-[14px]">
+        <div key={r.id} className="grid grid-cols-[minmax(150px,1fr)_72px_72px_72px_72px] items-center gap-2 border-t border-line px-4 py-2.5 text-[14px]">
           <span className="truncate">{r.name}</span>
           <span className={cn("text-center", r.high ? "text-danger-fg" : "text-ink-muted")}>{r.high}</span>
           <span className="text-center">{r.medium}</span>
@@ -48,6 +49,7 @@ function Breakdown({ name, rows }: { name: string; rows: BreakdownRow[] }) {
           <span className="text-center font-semibold">{r.total}</span>
         </div>
       ))}
+     </div>
     </div>
   );
 }
@@ -102,14 +104,32 @@ export function ReportView({ data, period }: { data: DashboardData; period: stri
                 <span>ID</span><span>Risk</span><span>Department</span><span className="text-center">Rating</span><span>Owner</span><span>Status</span><span>Last review</span>
               </div>
               {top.map((r) => (
-                <div key={r.id} className="grid grid-cols-[70px_minmax(0,1fr)_150px_70px_140px_90px_110px] items-center gap-3 border-t border-line px-4 py-3 text-[14px]">
-                  <span className="font-mono text-[13px]">{r.code}</span>
-                  <span className="font-medium">{r.title}</span>
-                  <span>{r.department}</span>
-                  <span className={cn("text-center font-semibold", LEVEL_TEXT[riskLevel(r.rating)])}>{r.rating}</span>
-                  <span>{r.owner ?? "Unassigned"}</span>
-                  <span>{r.archivedAt ? "Archived" : r.status === "closed" ? "Inactive" : "Active"}</span>
-                  <span className="text-ink-muted">{fmt(r.lastReviewedAt)}</span>
+                <div key={r.id} className="border-t border-line px-4 py-3 text-[14px]">
+                  <div className="grid grid-cols-[70px_minmax(0,1fr)_150px_70px_140px_90px_110px] items-center gap-3">
+                    <span className="font-mono text-[13px]">{r.code}</span>
+                    <span className="font-medium">{r.title}</span>
+                    <span>{r.department}</span>
+                    <span className={cn("text-center font-semibold", LEVEL_TEXT[riskLevel(r.rating)])}>{r.rating}</span>
+                    <span>{r.owner ?? "Unassigned"}</span>
+                    <span>{r.archivedAt ? "Archived" : r.status === "closed" ? "Inactive" : "Active"}</span>
+                    <span className="text-ink-muted">{fmt(r.lastReviewedAt)}</span>
+                  </div>
+                  {/* Same columns as the row above: owner under Owner, status under Status, due date under Last review. */}
+                  <div className="mt-2 flex flex-col gap-1 border-t border-dashed border-line pt-2">
+                    <p className={cn(HEAD, "pl-[82px]")}>Mitigation plans</p>
+                    {r.plans.length === 0 ? (
+                      <p className="pl-[82px] text-[13px] text-ink-muted">No mitigation plan.</p>
+                    ) : (
+                      r.plans.map((p, i) => (
+                        <div key={i} className="grid grid-cols-[70px_minmax(0,1fr)_150px_70px_140px_90px_110px] items-center gap-3 text-[13px]">
+                          <span className="col-start-2 col-span-3 font-medium">{p.title}</span>
+                          <span>{p.owner ?? "Unassigned"}</span>
+                          <span>{PLAN_STATUS[p.status]}</span>
+                          <span className="text-ink-muted">{p.dueDate ? `Due ${fmt(p.dueDate)}` : "No due date"}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

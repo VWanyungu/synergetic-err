@@ -3,9 +3,10 @@
 import { useRef, useState } from "react";
 import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useOutsideClick } from "@/hooks/use-outside-click";
+import { SHEET } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-const MENU = "absolute top-full z-30 mt-2 rounded-xl border border-line bg-surface shadow-[0_8px_24px_rgba(17,17,17,0.05),0_1px_3px_rgba(17,17,17,0.04)]";
+const MENU = cn(SHEET, "absolute top-full z-30 mt-2 rounded-xl border border-line bg-surface shadow-[0_8px_24px_rgba(17,17,17,0.05),0_1px_3px_rgba(17,17,17,0.04)]");
 const PILL_PRIMARY = "btn-primary btn-auto";
 
 function Footer({ onClear, onApply }: { onClear: () => void; onApply: () => void }) {
@@ -170,9 +171,9 @@ export function DateFilter({ month, onApply, label = "Date", empty = "Any time" 
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="flex w-max cursor-pointer items-center gap-3 rounded-full border border-line-input bg-surface py-1.5 pl-4 pr-3 text-[13px]"
+        className="flex w-max cursor-pointer items-center gap-2 rounded-full border border-line-input bg-surface py-1.5 pl-3 pr-2 text-[13px] sm:gap-3 sm:pl-4 sm:pr-3"
       >
-        <span className="border-r border-line-input pr-3 text-ink-muted">{label}</span>
+        <span className="border-r border-line-input pr-2 text-ink-muted sm:pr-3">{label}</span>
         <span className="whitespace-nowrap font-medium leading-[1.4]">{month ? monthLabel(month) : empty}</span>
         <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
       </button>

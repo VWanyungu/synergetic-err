@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
     const user = await db('users as u')
       .leftJoin('departments as d', 'd.id', 'u.department_id')
       .where('u.id', id)
-      .first('u.first_name', 'u.last_name', 'u.email', 'u.created_at', 'u.avatar_url', 'u.banner_url', 'd.id as departmentId', 'd.name as department');
+      .first('u.first_name', 'u.last_name', 'u.email', 'u.created_at', 'u.avatar_url', 'u.banner_url', 'd.id as departmentId', 'd.name as department', 'u.division_id as divisionId');
     if (!user) {
       res.status(404).json({ status: 'error', data: null, message: 'User not found' });
       return;
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
       .select('r.role', 'r.granted_at as since', db.raw(`nullif(trim(concat(g.first_name, ' ', g.last_name)), '') as "grantedBy"`));
     res.status(200).json({
       status: 'success',
-      data: { firstName: user.first_name, lastName: user.last_name, email: user.email, createdAt: user.created_at, avatarUrl: user.avatar_url, bannerUrl: user.banner_url, departmentId: user.departmentId, department: user.department, roles },
+      data: { firstName: user.first_name, lastName: user.last_name, email: user.email, createdAt: user.created_at, avatarUrl: user.avatar_url, bannerUrl: user.banner_url, departmentId: user.departmentId, department: user.department, divisionId: user.divisionId, roles },
       message: 'Profile retrieved successfully',
     });
   } catch (err) {

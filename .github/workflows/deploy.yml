@@ -11,7 +11,12 @@ env:
   FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME || 'vwanyungu' }}/synergetic-err-frontend
 
 jobs:
+  test:
+    name: Tests
+    uses: ./.github/workflows/test.yml
+
   build-and-push:
+    needs: test
     name: Build & Push Docker Images
     runs-on: ubuntu-latest
     steps:
@@ -33,6 +38,8 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
+          build-args: |
+            APP_VERSION=${{ github.sha }}
           tags: |
             ${{ env.BACKEND_IMAGE }}:latest
             ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
@@ -97,13 +104,9 @@ jobs:
             echo "==> Pulling updated docker images..."
             docker compose pull
 
-            # Stop and remove existing containers
-            echo "==> Stopping running containers..."
-            docker compose down
-
-            # Start up containers in detached mode
-            echo "==> Starting containers..."
-            docker compose up -d
+            # Update changed containers in detached mode and remove orphaned services
+            echo "==> Updating containers..."
+            docker compose up -d --remove-orphans
 
             # Wait for backend container to become ready
             echo "==> Waiting for backend and database to become ready..."
@@ -129,4 +132,3 @@ jobs:
             docker image prune -f
 
             echo "==> Deployment and database migrations completed successfully!"
-

@@ -1,5 +1,5 @@
 import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-import type { BreakdownRow, DashboardData } from "@/lib/dashboard";
+import { PLAN_STATUS, type BreakdownRow, type DashboardData } from "@/lib/dashboard";
 import { riskLevel } from "@/lib/risk";
 
 /**
@@ -208,14 +208,39 @@ export function DashboardReport({ data, meta }: { data: DashboardData; meta: Rep
               <Cell w="14%" bold>Last review</Cell>
             </View>
             {top.map((r) => (
-              <View key={r.id} style={s.tr} wrap={false}>
-                <Cell w="8%">{r.code}</Cell>
-                <Cell w="30%" bold>{r.title}</Cell>
-                <Cell w="15%">{r.department}</Cell>
-                <Cell w="9%" align="center" bold color={bandColor(r.rating)}>{r.rating}</Cell>
-                <Cell w="14%">{r.owner ?? "Unassigned"}</Cell>
-                <Cell w="10%">{r.archivedAt ? "Archived" : r.status === "closed" ? "Inactive" : "Active"}</Cell>
-                <Cell w="14%">{fmtDate(r.lastReviewedAt)}</Cell>
+              <View key={r.id} style={{ borderBottomWidth: 0.75, borderBottomColor: RULE }} wrap={false}>
+                <View style={{ flexDirection: "row", alignItems: "center", minHeight: 22 }}>
+                  <Cell w="8%">{r.code}</Cell>
+                  <Cell w="30%" bold>{r.title}</Cell>
+                  <Cell w="15%">{r.department}</Cell>
+                  <Cell w="9%" align="center" bold color={bandColor(r.rating)}>{r.rating}</Cell>
+                  <Cell w="14%">{r.owner ?? "Unassigned"}</Cell>
+                  <Cell w="10%">{r.archivedAt ? "Archived" : r.status === "closed" ? "Inactive" : "Active"}</Cell>
+                  <Cell w="14%">{fmtDate(r.lastReviewedAt)}</Cell>
+                </View>
+                {/* Same column widths as the row above: owner under Owner, status under Status, due date under Last review. */}
+                <View style={{ paddingBottom: 4 }}>
+                  <View style={{ paddingLeft: "8%" }}>
+                    <Cell w="100%">
+                      <Text style={{ fontSize: 8, color: MUTED, textTransform: "uppercase", letterSpacing: 0.5 }}>Mitigation plans</Text>
+                    </Cell>
+                  </View>
+                  {r.plans.length === 0 ? (
+                    <View style={{ paddingLeft: "8%" }}>
+                      <Cell w="100%" color={MUTED}>No mitigation plan.</Cell>
+                    </View>
+                  ) : (
+                    r.plans.map((p, i) => (
+                      <View key={i} style={{ flexDirection: "row" }}>
+                        <View style={{ width: "8%" }} />
+                        <Cell w="54%" bold>{p.title}</Cell>
+                        <Cell w="14%">{p.owner ?? "Unassigned"}</Cell>
+                        <Cell w="10%">{PLAN_STATUS[p.status]}</Cell>
+                        <Cell w="14%">{p.dueDate ? `Due ${fmtDate(p.dueDate)}` : "No due date"}</Cell>
+                      </View>
+                    ))
+                  )}
+                </View>
               </View>
             ))}
           </View>

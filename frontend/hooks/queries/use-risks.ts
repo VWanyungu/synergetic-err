@@ -9,4 +9,4 @@ export const useRisks = (departmentId: string, month: string) =>
   });
 
 export const useDepartments = () =>
-  useQuery({ queryKey: ["departments"], queryFn: () => api<Department[]>("/departments") });
+  useQuery({ queryKey: ["departments"], queryFn: () => api<Department[]>("/departments"), staleTime: 5 * 60_000 });

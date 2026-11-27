@@ -22,7 +22,7 @@ export default function ReportsPage() {
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">Reports</h1>
+        <h1 className="text-[26px] font-semibold sm:text-[32px] leading-[1.15] tracking-[-0.96px]">Reports</h1>
         {/* <p className="max-w-[640px] text-[15px] leading-[1.6] text-ink-muted">
           A report for every month on record, for audit and compliance. Pick a month to read its report. For the detail behind it, open the app with that period selected.
         </p> */}

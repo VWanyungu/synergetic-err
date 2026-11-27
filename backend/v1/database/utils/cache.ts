@@ -11,6 +11,15 @@ export class Cache {
     return redis.get<T>(key);
   }
 
+  /** The cached value for `key`, or `load()`'s result stored for `ttl` seconds. */
+  static async remember<T>(key: string, ttl: number, load: () => Promise<T>): Promise<T> {
+    const hit = await Cache.get<T>(key);
+    if (hit !== null) return hit;
+    const value = await load();
+    await Cache.set(key, value, { ex: ttl });
+    return value;
+  }
+
   static async del(key: string): Promise<number> {
     return redis.del(key);
   }

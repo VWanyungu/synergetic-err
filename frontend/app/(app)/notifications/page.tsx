@@ -89,7 +89,7 @@ export default function NotificationsPage() {
   return (
     <div className="flex flex-col gap-8">
       <header className="flex items-center justify-between gap-3">
-        <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">Notifications</h1>
+        <h1 className="text-[26px] font-semibold sm:text-[32px] leading-[1.15] tracking-[-0.96px]">Notifications</h1>
         <button type="button" onClick={() => readAll.mutate()} disabled={readAll.isPending || unread === 0} className="flex cursor-pointer items-center gap-1.5 text-[14px] font-medium text-brand disabled:cursor-not-allowed disabled:opacity-40">
           {readAll.isPending && <LoaderCircle className="size-3.5 animate-spin" />}
           Mark all as read

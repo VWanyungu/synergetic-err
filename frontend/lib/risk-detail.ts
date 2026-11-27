@@ -28,7 +28,7 @@ export interface RiskDetail {
   transfer: { at: string; from: string; to: string } | null;
   /** Every transfer of this risk between departments, newest first. */
   transfers: { at: string; from: string | null; to: string | null; by: string | null }[];
-  can: { edit: boolean; /** Admin and Risk Officer archive outright; a Risk Champion has to ask. */ archiveDirect: boolean };
+  can: { edit: boolean; /** Division Leads are read-only. */ comment: boolean; /** Admin and Risk Officer archive outright; a Risk Champion has to ask. */ archiveDirect: boolean };
   /** A pending request from a Risk Champion to archive this risk. */
   archiveRequest: { id: string; requestedAt: string; requestedBy: string | null } | null;
 }
@@ -38,7 +38,6 @@ export interface Attachment {
   name: string;
   mimeType: string | null;
   bytes: number;
-  url: string;
 }
 
 export interface ActivityItem {

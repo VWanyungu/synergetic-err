@@ -1,0 +1,2 @@
+/** Popover menus become a bottom sheet on a phone: a few fixed pixels from each edge instead of hanging off a trigger that may sit at the screen's edge. */
+export const SHEET = "max-sm:fixed max-sm:!inset-x-3 max-sm:!bottom-3 max-sm:!top-auto max-sm:!mt-0 max-sm:!w-auto max-sm:!min-w-0 max-sm:[&_li]:whitespace-normal max-sm:max-h-[70vh] max-sm:overflow-y-auto max-sm:z-[60] max-sm:shadow-[0_-12px_48px_rgba(0,0,0,0.2)]";

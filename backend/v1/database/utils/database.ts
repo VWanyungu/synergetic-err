@@ -18,6 +18,10 @@ export interface UserListItem {
   last_login: Date | null;
   created_at: Date;
   global_role: RoleName | null;
+  department_id: string | null;
+  department: string | null;
+  division_id: string | null;
+  division: string | null;
 }
 
 export interface UserDetail {
@@ -29,13 +33,22 @@ export interface UserDetail {
   status: 'active' | 'deactivated';
   global_role: RoleName | null;
   roles: RoleGrantRow[];
+  department_id: string | null;
+  department: string | null;
+  division_id: string | null;
+  division: string | null;
+  last_login: Date | null;
+  created_at: Date;
 }
 
 export interface UpdateUserInput {
+  email?: string;
   firstName?: string;
   lastName?: string;
   phone?: string | null;
   globalRole?: RoleName | null;
+  departmentId?: string | null;
+  divisionId?: string | null;
 }
 
 export interface AdminCreateUserInput {
@@ -44,6 +57,8 @@ export interface AdminCreateUserInput {
   email: string;
   phone?: string | null;
   globalRole?: RoleName | null;
+  departmentId?: string | null;
+  divisionId?: string | null;
 }
 
 export interface UserAuthView {
@@ -51,6 +66,7 @@ export interface UserAuthView {
   email: string | null;
   passwordHash: string | null;
   firstName: string | null;
+  status: string | null;
 }
 
 export interface CreateUserInput {
@@ -120,6 +136,8 @@ export class Users {
         'is_verified',
         'last_login',
         'created_at',
+        'department_id',
+        'division_id',
       )
       .limit(limit)
       .offset(offset)
@@ -134,9 +152,13 @@ export class Users {
           .whereNull('revoked_at')
       : [];
 
+    const departments: { id: string; name: string }[] = await db('departments').select('id', 'name');
+    const divisions: { id: string; name: string }[] = await db('divisions').select('id', 'name');
     const users: UserListItem[] = rows.map((row) => ({
       ...row,
       global_role: roleRows.find((r) => r.user_id === row.id)?.role ?? null,
+      department: departments.find((d) => d.id === row.department_id)?.name ?? null,
+      division: divisions.find((d) => d.id === row.division_id)?.name ?? null,
     }));
 
     return {
@@ -148,10 +170,12 @@ export class Users {
 
   static async getUserById(id: string): Promise<UserDetail | null> {
     const user = await db('users')
-      .select('id', 'first_name', 'last_name', 'email', 'phone_number', 'status')
+      .select('id', 'first_name', 'last_name', 'email', 'phone_number', 'status', 'department_id', 'division_id', 'last_login', 'created_at')
       .where({ id })
       .first();
     if (!user) return null;
+    const department = user.department_id ? ((await db('departments').where({ id: user.department_id }).first('name'))?.name ?? null) : null;
+    const division = user.division_id ? ((await db('divisions').where({ id: user.division_id }).first('name'))?.name ?? null) : null;
 
     const roles = await db('roles')
       .select('attribute_id', 'user_id', 'role', 'scope_type', 'program_id', 'project_id', 'granted_by', 'granted_at')
@@ -161,14 +185,17 @@ export class Users {
     const globalRoleRow = roles.find((r) => r.scope_type === 'global' && r.role !== 'Admin') ??
       roles.find((r) => r.scope_type === 'global');
 
-    return { ...user, global_role: globalRoleRow ? globalRoleRow.role : null, roles };
+    return { ...user, department, division, global_role: globalRoleRow ? globalRoleRow.role : null, roles };
   }
 
   static async updateUser(id: string, input: UpdateUserInput, actorId: string): Promise<UserDetail | null> {
     const patch: Record<string, unknown> = {};
+    if (input.email !== undefined) patch.email = input.email;
     if (input.firstName !== undefined) patch.first_name = input.firstName;
     if (input.lastName !== undefined) patch.last_name = input.lastName;
     if (input.phone !== undefined) patch.phone_number = input.phone;
+    if (input.departmentId !== undefined) patch.department_id = input.departmentId;
+    if (input.divisionId !== undefined) patch.division_id = input.divisionId;
     if (Object.keys(patch).length) {
       patch.updated_at = db.fn.now();
       await db('users').where({ id }).update(patch);
@@ -215,6 +242,8 @@ export class Users {
       password_hash: passwordHash,
       username: input.email.split('@')[0],
       phone_number: input.phone ?? null,
+      department_id: input.departmentId ?? null,
+      division_id: input.divisionId ?? null,
       status: 'active',
       is_verified: false,
     });
@@ -226,17 +255,18 @@ export class Users {
 
   static async getSingleUserByEmail(email: string): Promise<UserAuthView> {
     const [user] = await db('users')
-      .select<{ id: string; email: string; password_hash: string; first_name: string }[]>(
+      .select<{ id: string; email: string; password_hash: string; first_name: string; status: string }[]>(
         'id',
         'email',
         'password_hash',
         'first_name',
+        'status',
       )
       .where('email', email);
 
-    if (!user) return { userId: null, email: null, passwordHash: null, firstName: null };
+    if (!user) return { userId: null, email: null, passwordHash: null, firstName: null, status: null };
 
-    return { userId: user.id, email: user.email, passwordHash: user.password_hash, firstName: user.first_name };
+    return { userId: user.id, email: user.email, passwordHash: user.password_hash, firstName: user.first_name, status: user.status };
   }
 
   static async createUser(input: CreateUserInput): Promise<{ userId: string; email: string }> {

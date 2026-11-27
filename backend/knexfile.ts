@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import type { Knex } from 'knex';
+import { fileURLToPath } from 'node:url';
 
 type EnvName = 'development' | 'staging' | 'production';
 type Prefix = '' | 'STAGING_' | 'PROD_';
@@ -35,12 +36,12 @@ const config: Knex.Config = {
   connection: connection(prefixes[env]),
   pool: pools[env],
   migrations: {
-    directory: './v1/migrations',
+    directory: fileURLToPath(new URL('./v1/migrations', import.meta.url)),
     tableName: 'knex_migrations',
     extension: 'ts',
     loadExtensions: ['.ts'],
   },
-  seeds: { directory: './v1/seeds', extension: 'ts', loadExtensions: ['.ts'] },
+  seeds: { directory: fileURLToPath(new URL('./v1/seeds', import.meta.url)), extension: 'ts', loadExtensions: ['.ts'] },
 };
 
 export default config;

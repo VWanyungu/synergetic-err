@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 import { SEED_PASSWORD_HASH } from './01_users.js';
 
 export const DEPARTMENTS: [name: string, code: string, description: string][] = [
-  ['People - Talent, Licences, Labour, Welfare', 'PPL', 'Workforce talent, professional licences, labour relations and employee welfare.'],
+  ['People', 'PPL', 'Workforce talent, professional licences, labour relations and employee welfare.'],
   ['Legal', 'LEG', 'Contracts, statutory compliance, litigation and regulatory exposure.'],
   ['Finance', 'FIN', 'Treasury, financial controls, budgeting, liquidity and accounting.'],
   ['IT', 'IT', 'Information systems, network infrastructure, data governance and cybersecurity.'],
@@ -48,7 +48,7 @@ export const OWNERS = [
 ];
 
 const RISKS: Record<string, [string, string, number, number][]> = {
-  'People - Talent, Licences, Labour, Welfare': [
+  'People': [
     ['Engineering talent turnover and key person dependency', 'People & Human Capital', 4, 4],
     ['Mandatory professional practising licences lapse', 'Compliance & Legal', 3, 5],
     ['Collective bargaining agreement negotiation deadlock', 'Operational', 3, 4],

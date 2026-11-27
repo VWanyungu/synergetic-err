@@ -1,0 +1,287 @@
+---
+title: "Deployment"
+description: "Plan for running the register in production on one VPS: Cloudflare, Caddy, Docker Compose, Cloudflare R2 for files, a GitHub Actions pipeline, and rollback."
+---
+
+## What runs in production
+
+One VPS, one Docker Compose project, one external proxy.
+
+| Piece | What it is | Reachable from |
+|---|---|---|
+| Cloudflare | DNS, TLS to the browser, WAF, rate limits | the internet |
+| Caddy | reverse proxy container, TLS to Cloudflare | Cloudflare only |
+| `frontend` | Next.js on `:3003` | Caddy |
+| `backend` | Express on `:8080` | Caddy, and the frontend |
+| `db` | PostgreSQL 16 | `backend` only |
+| `redis` | Redis 7, cache and revoked sessions | `backend` only |
+| Cloudflare R2 | files: attachments (private), profile pictures (public), database backups (private) | `backend`, backup job |
+| Gmail SMTP | password-reset email | `backend` |
+
+In production the backend uses **only** these services. Cloudinary and Upstash are for development and staging; setting `NODE_ENV=production` switches uploads to R2 and the cache to the local Redis.
+
+### How the containers are connected
+
+```mermaid
+flowchart LR
+  CF[Cloudflare] -->|443| C[caddy]
+  subgraph caddy network
+    C --> FE[err-frontend :3003]
+    C --> BE[err-backend :8080]
+  end
+  subgraph err-network, private
+    FE --- BE
+    BE --> PG[(db)]
+    BE --> RD[(redis)]
+  end
+  BE --> R2[(R2)]
+```
+
+- `backend` and `frontend` join two networks: the private `err-network`, and the `caddy` network shared with your Caddy container. Caddy reaches them as `err-backend:8080` and `err-frontend:3003`.
+- `db` and `redis` are on `err-network` only. Caddy cannot reach them, and neither can anything else outside Compose.
+- **No service publishes a port on the host.** The only open ports on the VPS are Caddy's 80 and 443.
+- Create the shared network once: `docker network create caddy`. If yours has another name, set `CADDY_NETWORK` in `.env`.
+
+## Before the first deploy
+
+Fix these. Each one is a place where a missing value silently produces an insecure or broken system.
+
+| # | Problem | Fix |
+|---|---|---|
+| 1 | `docker-compose.yml` falls back to known values when a variable is missing: `dev_access_secret_1234567890` style secrets, a `postgres`/`postgres` login, `NODE_ENV=development` | Make the secrets required: `${ACCESS_TOKEN_SECRET:?set in .env}` for the three token secrets, `DB_PASSWORD` and `METRICS_TOKEN`. Set `NODE_ENV=production` in the VPS `.env`. |
+| 2 | `NEXT_PUBLIC_API_URL` is baked into the frontend image at build time and falls back to `http://localhost:8080` | Set the GitHub secret to the public API URL, and make the workflow fail if it is empty |
+| 3 | The deploy runs `docker compose down` before `up` | Replace with `docker compose up -d --remove-orphans`, which recreates only what changed and avoids 15 to 40 seconds of downtime per release |
+| 4 | Only `main` deploys. Staging is updated by hand and drifts | Add a staging workflow (see [Branches](#branches)) |
+| 5 | Nothing fails the deploy if the app is broken after it starts | Add the smoke test below |
+| 6 | The seeds create `admin@err.local` with the public dev password `ChangeMe123!` | Never run `bun run seed` in production. Create the first Admin with the command in [First deploy](#first-deploy). |
+| 7 | Container logs are not rotated | Add `logging` limits to every service |
+| 8 | No database backup | See [Storage and backups](/operations/storage-and-backups) |
+
+Compose changes for 1 and 7:
+
+```yaml
+services:
+  db:
+    logging: &logging
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+  redis:
+    logging: *logging
+  backend:
+    logging: *logging
+    environment:
+      NODE_ENV: production
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:?set in .env}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:?set in .env}
+      FORGOT_PASSWORD_TOKEN_SECRET: ${FORGOT_PASSWORD_TOKEN_SECRET:?set in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?set in .env}
+      METRICS_TOKEN: ${METRICS_TOKEN:?set in .env}
+  frontend:
+    logging: *logging
+```
+
+## Server setup
+
+### Size
+
+2 vCPU, 4 GB RAM, 40 GB SSD to start. Add 2 GB of swap as a safety net, not as capacity.
+
+### Once, as root, on a fresh Ubuntu LTS server
+
+```bash
+# A deploy user instead of root
+adduser --disabled-password deploy && usermod -aG sudo deploy
+mkdir -p /home/deploy/.ssh && cp ~/.ssh/authorized_keys /home/deploy/.ssh/
+chown -R deploy:deploy /home/deploy/.ssh
+
+# SSH: keys only, no root login
+sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/; s/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+systemctl restart ssh
+
+# Firewall, automatic security updates, brute-force protection, Docker
+ufw default deny incoming && ufw allow OpenSSH && ufw allow 80,443/tcp && ufw enable
+apt-get update && apt-get install -y unattended-upgrades fail2ban
+dpkg-reconfigure -plow unattended-upgrades
+curl -fsSL https://get.docker.com | sh && usermod -aG docker deploy
+docker network create caddy
+```
+
+### Then, as `deploy`
+
+```bash
+sudo mkdir -p /var/www/synergetic-err && sudo chown deploy: /var/www/synergetic-err
+git clone https://github.com/VWanyungu/synergetic-err.git /var/www/synergetic-err
+cd /var/www/synergetic-err && cp .env.example .env && chmod 600 .env
+```
+
+Fill in `.env` (below), and keep a copy in the team password manager. A rebuilt server cannot start without it.
+
+## Caddy
+
+Add two sites to your Caddyfile.
+
+```caddyfile
+err.example.com {
+  tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key   # Cloudflare Origin Certificate
+  encode zstd gzip
+  reverse_proxy err-frontend:3003
+}
+
+api.err.example.com {
+  tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+  encode zstd gzip
+
+  # Metrics are for Prometheus on the internal network, never the internet.
+  @metrics path /metrics
+  respond @metrics 404
+
+  request_body {
+    max_size 20MB          # attachments arrive as base64 JSON, up to 15 MB
+  }
+  reverse_proxy err-backend:8080 {
+    health_uri /health/live
+    health_interval 15s
+  }
+}
+```
+
+- `max_size` must stay above the backend's 15 MB limit, or Caddy rejects attachments before the app sees them.
+- A Cloudflare Origin Certificate lasts 15 years and needs no renewal, which suits a proxy that sits behind Cloudflare. To have Caddy fetch certificates itself instead, use the Cloudflare DNS challenge, which needs a Caddy build with the `caddy-dns/cloudflare` module.
+- `/health/live` only checks that the process is up, so a database outage does not make Caddy mark the backend down.
+
+## Cloudflare
+
+| Setting | Value |
+|---|---|
+| DNS | `A` records for `err` and `api.err` to the VPS, **proxied** (orange cloud) |
+| SSL/TLS mode | **Full (strict)** |
+| Always use HTTPS, HSTS | on |
+| WAF | managed rules on. A rate-limit rule of 10 requests a minute per IP on `POST /login` and `POST /forgot-password` (the API takes its version from an `api-v: v1` header, not the path) |
+| Origin lock-down | allow 443 only from [Cloudflare's IP ranges](https://www.cloudflare.com/ips/), so nobody can reach Caddy directly. Docker publishes Caddy's ports around `ufw`, so put the rule on the `DOCKER-USER` chain (or use `ufw-docker`); a plain `ufw allow` does not protect them. |
+
+Set `CORS_ORIGIN` to `https://err.example.com` only, never `*`.
+
+## Configuration
+
+All configuration lives in `.env` on the VPS, which is never committed and never baked into an image.
+
+| Group | Variables | Notes |
+|---|---|---|
+| Runtime | `NODE_ENV=production`, `FRONTEND_URL`, `BACKEND_URL`, `CORS_ORIGIN`, `NEXT_PUBLIC_API_URL`, `CADDY_NETWORK` (only if not `caddy`) | |
+| Database | `DB_USER`, `DB_PASSWORD`, `DB_NAME` | long random password |
+| Auth | `ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`, `FORGOT_PASSWORD_TOKEN_SECRET` | each 48+ random characters, all different. Rotating one signs everyone out. |
+| Files | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_BUCKET_NAME`, `R2_PUBLIC_URL` | see [Storage and backups](/operations/storage-and-backups) |
+| Mail | `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `MAIL_FROM` | password reset does not work without these |
+| Monitoring | `METRICS_TOKEN` | Prometheus sends it to `/metrics`. Without it, production serves no metrics. |
+
+Generate secrets with `openssl rand -base64 48`, and `METRICS_TOKEN` with `openssl rand -hex 32`.
+
+GitHub repository secrets for the pipeline: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `NEXT_PUBLIC_API_URL`, `VPS_HOST`, `VPS_USERNAME`, `VPS_SSH_KEY`, `VPS_SSH_PORT`, `VPS_APP_DIR`. Use a dedicated SSH key for deploys that can do nothing else.
+
+## First deploy
+
+```bash
+cd /var/www/synergetic-err
+docker compose pull && docker compose up -d
+docker compose logs -f backend          # wait for the migrations, then the listening line
+docker compose exec backend wget -qO- http://localhost:8080/health
+```
+
+The database starts empty. The migrations create the schema and the access roles, including Department Lead and Division Lead, but nobody can sign in yet.
+
+Create the first Admin with the app's own code, so the password is hashed the same way sign-in expects:
+
+```bash
+docker compose exec -e ADMIN_EMAIL=you@organisation.co.ke -e ADMIN_PASSWORD='a-long-password-only-you-know' backend bun -e "
+import hashPassword from './v1/utils/hashPassword.ts';
+import { Users, Roles } from './v1/database/utils/database.ts';
+import db from './v1/database/dbSetup.ts';
+const { ADMIN_EMAIL: email, ADMIN_PASSWORD: password } = process.env;
+if (!email || !password || password.length < 12) throw new Error('Set ADMIN_EMAIL and a 12+ character ADMIN_PASSWORD');
+const user = await Users.createUserAdmin({ firstName: 'Admin', lastName: 'User', email }, await hashPassword(password), '');
+await Roles.setGlobalRole(user.id, 'Admin', user.id);
+console.log('created', user.email);
+await db.destroy();
+"
+```
+
+Sign in, change the name on the profile page, and create everyone else from the **Admin** page. Accounts created there start with a default password; ask people to use **Forgot password?** (which needs the mail settings above) before first use.
+
+Then confirm in order:
+
+1. `/health` says `ok` and its `version` is the commit you deployed.
+2. Attach a file to a risk, open it, and confirm the raw R2 address refuses direct access.
+3. Run the backup script by hand once, and confirm the file is in R2.
+
+## Releases
+
+### Branches
+
+| Branch | Environment | Trigger |
+|---|---|---|
+| `feature/*` | none | pull request into `staging` |
+| `staging` | staging (`NODE_ENV=staging`, Cloudinary and Upstash) | push |
+| `main` | production | merge from `staging` |
+
+For the staging workflow, copy `deploy.yml` to `deploy-staging.yml`, trigger it on `staging`, and point it at the staging server. Tag its images `staging-<sha>` so a staging build is never mistaken for a production one.
+
+### Each release
+
+1. Merge into `staging` and wait for its deploy.
+2. Click through: sign in, dashboard, open a risk, comment, attach a file and open it, Reports.
+3. Read the new migrations for anything destructive (dropped or renamed columns). If there is one, split it over two releases: ship code that works with both shapes, then drop the old one next time.
+4. Merge `staging` into `main`. The workflow builds, deploys and migrates.
+5. Check `/health` (`status`, `version`, `migrations.pending: 0`), sign in as a real user, and watch the error rate for 15 minutes.
+
+The pipeline builds both images, pushes them to Docker Hub as `latest` and the commit SHA, then over SSH runs `git reset --hard origin/main`, `docker compose pull`, `docker compose up -d` and `bun run migrate`. The backend also migrates when it starts, so migrations run twice; Knex skips what already ran.
+
+### Smoke test
+
+Add as the last step of the deploy job, so a broken release fails the pipeline:
+
+```bash
+for i in $(seq 1 20); do
+  body=$(curl -fsS https://api.err.example.com/health) \
+    && echo "$body" | grep -q "\"version\":\"$GITHUB_SHA\"" \
+    && ! echo "$body" | grep -q '"status":"down"' && exit 0
+  sleep 3
+done
+echo "Deploy check failed: wrong version or unhealthy" && exit 1
+```
+
+It passes only when the running version equals the commit just deployed and the app is not `down`.
+
+## Rollback
+
+Images are tagged with the commit SHA and `docker-compose.yml` reads `IMAGE_TAG`, so rolling the code back is one command:
+
+```bash
+cd /var/www/synergetic-err
+IMAGE_TAG=<previous-sha> docker compose up -d
+```
+
+Find the previous SHA in the GitHub Actions history, or in the `version` field of an earlier `/health` response. Always deploy by SHA when it matters; `latest` moves.
+
+Rolling back code does not roll back the database:
+
+| The release | Do this |
+|---|---|
+| had no migration | roll back the image only |
+| only added columns or tables | roll back the image only. The old code ignores them. |
+| changed or dropped data | restore the pre-release backup (see the [runbook](/operations/runbook#restore-the-database)), then roll back the image |
+
+`bun run migrate:rollback` undoes the last batch, but only if every `down` in it is correct and no data depends on it. Treat it as a last resort, and not without a fresh backup.
+
+Before a risky release, take a backup so there is a known restore point: `/opt/err/backup.sh`.
+
+## Go-live checklist
+
+- [ ] The compose fixes above are deployed: required secrets, log rotation, `NODE_ENV=production`
+- [ ] `docker ps` shows no published ports for the app, only Caddy's 80 and 443
+- [ ] Cloudflare proxy on, SSL Full (strict), origin locked to Cloudflare's addresses
+- [ ] An attachment uploads to R2 and opens through its signed link
+- [ ] No seed data in production, and the first Admin was created with the command above
+- [ ] A backup ran, and a restore into a scratch database worked
+- [ ] Uptime checks and alerts are live (see [Monitoring](/operations/monitoring))
+- [ ] A rollback was rehearsed once on staging
+- [ ] The contacts table on the [overview](/operations) is filled in

@@ -4,12 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Building2, ChevronDown, ChevronRight, Layers, List, Moon, Network, Plus, Sun } from "lucide-react";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { useTheme } from "@/components/theme-provider";
 import { ICONS } from "@/components/registers/registers-view";
 import { useDivisions, useRegisters } from "@/hooks/queries/use-registers";
 import { useUnreadCount } from "@/hooks/queries/use-notifications";
 import { useMe } from "@/hooks/queries/use-me";
+import { isDivisionLead } from "@/lib/roles";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +61,7 @@ export function Navbar() {
   const { email, logout } = useAuth();
   const { toggle: toggleTheme } = useTheme();
   const me = useMe();
+  const divisionLead = !!me.data && isDivisionLead(me.data.roles.map((r) => r.role));
   const count = useUnreadCount().data ?? 0;
   const registers = useRegisters();
   const divisions = useDivisions();
@@ -76,11 +79,14 @@ export function Navbar() {
   );
 
   return (
-    <header className="sticky top-0 z-40 flex h-[72px] items-center gap-4 border-b border-line bg-surface px-8">
+    <header className="sticky top-0 z-50 flex h-[72px] items-center gap-2 border-b border-line bg-surface px-4 sm:px-6 lg:gap-4 lg:px-8">
       <Link href="/" className="shrink-0">
         <Image src="/synergetic-logo.png" alt="Synergetic" width={106} height={45} priority />
       </Link>
-      <nav className="ml-4 flex items-center gap-1">
+      <nav className="ml-4 hidden items-center gap-1 lg:flex">
+        {/* A Division Lead has one place to go: their division's register. */}
+        {divisionLead && me.data?.divisionId ? link(`/risks/division/${me.data.divisionId}`, "My division", pathname.startsWith("/risks")) : (
+        <>
         {link("/", "Dashboard", pathname === "/")}
 
         <div className="group relative">
@@ -134,6 +140,10 @@ export function Navbar() {
 
         {link("/risks/distribution", "Heat map", pathname.startsWith("/risks/distribution"))}
         {link("/reports", "Reports", pathname.startsWith("/reports"))}
+        {/* Only people who manage users see this. */}
+        {me.data?.roles.some((r) => r.role === "Admin" || r.role === "Risk Officer") && link("/admin", "Admin", pathname.startsWith("/admin"))}
+        </>
+        )}
       </nav>
 
       <div className="flex-1" />
@@ -145,7 +155,7 @@ export function Navbar() {
         onClick={toggleTheme}
         aria-label="Toggle dark mode"
         title="Toggle dark mode"
-        className="flex size-9 cursor-pointer items-center justify-center rounded-full hover:bg-field"
+        className="hidden size-9 cursor-pointer items-center justify-center rounded-full hover:bg-field lg:flex"
       >
         <span className="theme-icon-window size-[18px]">
           <Moon className="theme-icon theme-icon-moon size-[18px]" />
@@ -153,19 +163,19 @@ export function Navbar() {
         </span>
       </button>
 
-      <Link href="/notifications" aria-label={count ? `Notifications, ${count} unread` : "Notifications"} className="flex size-9 items-center justify-center rounded-full hover:bg-field">
+      <Link href="/notifications" aria-label={count ? `Notifications, ${count} unread` : "Notifications"} className="flex size-11 lg:size-9 items-center justify-center rounded-full hover:bg-field">
         <BellWithCount count={count} />
       </Link>
 
-      <Link
+      {!divisionLead && <Link
         href="/risks/new"
-        className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border border-line-input px-4 text-[14px] font-medium leading-[1.4] transition-[background-color,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-field active:scale-[0.98]"
+        className="hidden h-9 items-center gap-1.5 whitespace-nowrap rounded-full border border-line-input px-4 text-[14px] font-medium leading-[1.4] transition-[background-color,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-field active:scale-[0.98] lg:flex"
       >
         <Plus className="size-4 text-brand" strokeWidth={2} aria-hidden />
         New risk
-      </Link>
+      </Link>}
 
-      <div className="group relative">
+      <div className="group relative hidden lg:block">
         <button
           className="flex size-9 cursor-pointer items-center justify-center rounded-full bg-success-bg bg-cover bg-center text-[13px] font-semibold text-success-fg"
           style={me.data?.avatarUrl ? { backgroundImage: `url(${me.data.avatarUrl})` } : undefined}
@@ -191,6 +201,7 @@ export function Navbar() {
           </div>
         </div>
       </div>
+      <MobileNav />
     </header>
   );
 }

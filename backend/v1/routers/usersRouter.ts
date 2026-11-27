@@ -1,4 +1,5 @@
 import express from 'express';
+import db from '../database/dbSetup.js';
 import { Users, Tokens, AccessRoles } from '../database/utils/database.js';
 import type { AdminCreateUserInput, UpdateUserInput, RoleName } from '../database/utils/database.js';
 import { Cache } from '../database/utils/cache.js';
@@ -15,8 +16,34 @@ import {
 
 const router = express.Router();
 
-const canRead = authorize(['Admin']);
-const canWrite = authorize(['Admin']);
+// Admins and Risk Officers manage users. A Risk Officer may not create Admins or touch Admin accounts (no climbing the ladder).
+const canRead = authorize(['Risk Officer']);
+const canWrite = authorize(['Risk Officer']);
+
+const actorIsAdmin = (req: express.Request) => !!req.user!.role.some((g) => g.role === 'Admin' && g.scope_type === 'global');
+const isAdminUser = async (id: string) => !!(await db('roles').where({ user_id: id, role: 'Admin' }).whereNull('revoked_at').first('attribute_id'));
+
+/** Returns a message when this actor may not act on this user, otherwise null. */
+async function forbidden(req: express.Request, targetId: string): Promise<string | null> {
+  if (!actorIsAdmin(req) && (await isAdminUser(targetId))) return 'Only an Admin can change an Admin account.';
+  return null;
+}
+
+/** What a role needs in order to be usable, or null when it is fine. Department roles live in one department, a Division Lead in one division. */
+function roleNeeds(role: string | null | undefined, departmentId: string | null | undefined, divisionId: string | null | undefined): string | null {
+  if ((role === 'Risk Champion' || role === 'Department Lead') && !departmentId) return `A ${role} needs a department.`;
+  if (role === 'Division Lead' && !divisionId) return 'A Division Lead needs a division.';
+  return null;
+}
+
+/** Ends every session of a user: refresh tokens are deleted and the access token cut-off moves to now. */
+async function revokeSessions(id: string): Promise<Date | null> {
+  const invalidatedAt = await Users.invalidateSessions(id);
+  if (!invalidatedAt) return null;
+  await Tokens.deleteAllRefreshTokensForUser(id);
+  await Cache.set(`session_invalidated_${id}`, invalidatedAt.getTime(), { ex: 900 });
+  return invalidatedAt;
+}
 
 /** Global role must be a currently-active entry in the access_role catalog. */
 async function isGrantableRole(role: string | null | undefined): Promise<boolean> {
@@ -112,8 +139,18 @@ router.post('/', canWrite, async (req, res) => {
     res.status(400).json({ status: 'error', data: null, message: 'Unknown or inactive role' });
     return;
   }
+  const input = value as AdminCreateUserInput;
+  const denied = !actorIsAdmin(req) && input.globalRole === 'Admin' ? 'Only an Admin can create an Admin.' : roleNeeds(input.globalRole, input.departmentId, input.divisionId);
+  if (denied) {
+    res.status(denied.startsWith('Only') ? 403 : 400).json({ status: 'error', data: null, message: denied });
+    return;
+  }
   try {
-    const user = await Users.createUserAdmin(value as AdminCreateUserInput, SEED_PASSWORD_HASH, req.user!.userId);
+    if (await db('users').whereRaw('lower(email) = ?', [input.email.toLowerCase()]).first('id')) {
+      res.status(409).json({ status: 'error', data: null, message: 'A user with this email already exists.' });
+      return;
+    }
+    const user = await Users.createUserAdmin(input, SEED_PASSWORD_HASH, req.user!.userId);
     res.status(201).json({ status: 'success', data: { user }, message: 'User created' });
   } catch (err) {
     sendRouteError(res, err);
@@ -136,15 +173,42 @@ router.put('/:id', canWrite, async (req, res) => {
     return;
   }
   try {
-    const user = await Users.updateUser(
-      (params.value as { id: string }).id,
-      body.value as UpdateUserInput,
-      req.user!.userId,
-    );
-    if (!user) {
+    const id = (params.value as { id: string }).id;
+    const input = body.value as UpdateUserInput;
+    const current = await Users.getUserById(id);
+    if (!current) {
       res.status(404).json({ status: 'error', data: null, message: 'User not found' });
       return;
     }
+    const denied = (await forbidden(req, id)) ?? (!actorIsAdmin(req) && input.globalRole === 'Admin' ? 'Only an Admin can make someone an Admin.' : null);
+    if (denied) {
+      res.status(403).json({ status: 'error', data: null, message: denied });
+      return;
+    }
+    // The email is the sign-in identity, so only an Admin may change it, and it must stay unique.
+    const emailChanged = input.email !== undefined && input.email !== current.email.toLowerCase();
+    if (emailChanged) {
+      if (!actorIsAdmin(req)) {
+        res.status(403).json({ status: 'error', data: null, message: 'Only an Admin can change an email address.' });
+        return;
+      }
+      if (await db('users').whereRaw('lower(email) = ?', [input.email!]).whereNot({ id }).first('id')) {
+        res.status(409).json({ status: 'error', data: null, message: 'A user with this email already exists.' });
+        return;
+      }
+    }
+    // A Risk Champion works inside one department, so they cannot be left without one.
+    const role = input.globalRole !== undefined ? input.globalRole : current.global_role;
+    const department = input.departmentId !== undefined ? input.departmentId : current.department_id;
+    const division = input.divisionId !== undefined ? input.divisionId : current.division_id;
+    const needs = roleNeeds(role, department, division);
+    if (needs) {
+      res.status(400).json({ status: 'error', data: null, message: needs });
+      return;
+    }
+    const user = await Users.updateUser(id, input, req.user!.userId);
+    // Roles travel inside the sign-in token, so a changed role or department only takes effect after signing in again.
+    if (emailChanged || (input.globalRole !== undefined && input.globalRole !== current.global_role) || (input.departmentId !== undefined && input.departmentId !== current.department_id) || (input.divisionId !== undefined && input.divisionId !== current.division_id)) await revokeSessions(id);
     res.status(200).json({ status: 'success', data: { user }, message: 'User updated' });
   } catch (err) {
     sendRouteError(res, err);
@@ -164,7 +228,14 @@ router.patch('/:id/status', canWrite, async (req, res) => {
     return;
   }
   try {
-    const user = await Users.setStatus((params.value as { id: string }).id, body.value.status);
+    const id = (params.value as { id: string }).id;
+    const denied = id === req.user!.userId && body.value.status === 'deactivated' ? 'You cannot deactivate your own account.' : await forbidden(req, id);
+    if (denied) {
+      res.status(403).json({ status: 'error', data: null, message: denied });
+      return;
+    }
+    const user = await Users.setStatus(id, body.value.status);
+    if (user && body.value.status === 'deactivated') await revokeSessions(id);
     if (!user) {
       res.status(404).json({ status: 'error', data: null, message: 'User not found' });
       return;
@@ -186,13 +257,16 @@ router.post('/:id/invalidate-sessions', canWrite, async (req, res) => {
   }
   const { id } = params.value as { id: string };
   try {
-    const invalidatedAt = await Users.invalidateSessions(id);
+    const denied = await forbidden(req, id);
+    if (denied) {
+      res.status(403).json({ status: 'error', data: null, message: denied });
+      return;
+    }
+    const invalidatedAt = await revokeSessions(id);
     if (!invalidatedAt) {
       res.status(404).json({ status: 'error', data: null, message: 'User not found' });
       return;
     }
-    await Tokens.deleteAllRefreshTokensForUser(id);
-    await Cache.set(`session_invalidated_${id}`, invalidatedAt.getTime(), { ex: 900 });
     res.status(200).json({ status: 'success', data: { invalidatedAt }, message: 'Sessions invalidated' });
   } catch (err) {
     sendRouteError(res, err);

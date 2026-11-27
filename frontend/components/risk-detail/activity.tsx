@@ -11,6 +11,7 @@ import { Markdown } from "@/components/risk-detail/markdown";
 import { diffSentences } from "@/components/risk-detail/diff";
 import { fmtDate, RESPONSE_LABEL, STATUS_LABEL, type ActivityItem, type HistoryVersion, type RiskDetail } from "@/lib/risk-detail";
 import { riskLevel } from "@/lib/risk";
+import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 const SHOWN_CHANGES = 4;
@@ -96,7 +97,7 @@ function HistoryMenu({ riskId, commentId, text, noun }: { riskId: string; commen
         <ChevronDown className="size-3.5" />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-20 mt-10 w-[360px] rounded-[18px] border border-line bg-subtle p-[5px] shadow-[0_1px_3px_rgba(17,17,17,0.04),0_8px_24px_rgba(17,17,17,0.05)]">
+        <div role="menu" className="absolute right-0 top-full z-20 mt-10 w-[min(360px,calc(100vw-2rem))] rounded-[18px] border border-line bg-subtle p-[5px] shadow-[0_1px_3px_rgba(17,17,17,0.04),0_8px_24px_rgba(17,17,17,0.05)]">
           <div className="flex flex-col gap-0.5 rounded-[13px] border border-line bg-surface p-1.5">
             <p className="py-1.5 pl-2.5 text-[13px] leading-normal text-ink-muted">{q.isPending ? "Loading…" : `Edited ${Math.max(versions.length - 1, 0)} ${versions.length === 2 ? "time" : "times"}`}</p>
             {q.isError && <p className="px-2.5 py-1.5 text-[13px] text-danger-fg">Could not load the history.</p>}
@@ -191,6 +192,17 @@ function DescriptionCard({ risk }: { risk: RiskDetail }) {
   );
 }
 
+/** Files are private: ask the API for a short-lived link, then open it. The tab opens first, on the click, so a popup blocker allows it. */
+function openAttachment(riskId: string, attachmentId: string) {
+  const tab = window.open("", "_blank");
+  api<{ url: string }>(`/risks/${riskId}/attachments/${attachmentId}/url`)
+    .then(({ url }) => (tab ? (tab.location.href = url) : window.location.assign(url)))
+    .catch((e: Error) => {
+      tab?.close();
+      toast.error(e.message);
+    });
+}
+
 function CommentCard({ item, riskId, mine }: { item: ActivityItem; riskId: string; mine: boolean }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(item.body ?? "");
@@ -218,11 +230,11 @@ function CommentCard({ item, riskId, mine }: { item: ActivityItem; riskId: strin
             <ul className="flex flex-wrap gap-2">
               {item.attachments.map((a) => (
                 <li key={a.id}>
-                  <a href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[13px] hover:bg-field">
+                  <button type="button" onClick={() => openAttachment(riskId, a.id)} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[13px] hover:bg-field">
                     <FileText className="size-3.5" aria-hidden />
                     {a.name}
                     <span className="text-ink-muted">{a.bytes < 1048576 ? `${Math.max(1, Math.round(a.bytes / 1024))} KB` : `${(a.bytes / 1048576).toFixed(1)} MB`}</span>
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>

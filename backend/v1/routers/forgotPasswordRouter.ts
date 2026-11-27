@@ -13,8 +13,10 @@ router.post('/', async (req, res) => {
   }
 
   const user = await Users.getSingleUserByEmail(email);
-  if (!user.email || user.userId === null) {
-    res.status(404).json({ status: 'error', data: null, message: 'Email not found' });
+  // Same answer whether or not the address is registered, so this cannot be used to find out who has an account.
+  const reply = () => res.status(200).json({ status: 'success', data: null, message: 'If that email is registered, a reset link has been sent.' });
+  if (!user.email || user.userId === null || user.status === 'deactivated') {
+    reply();
     return;
   }
 
@@ -35,11 +37,7 @@ router.post('/', async (req, res) => {
     return;
   }
 
-  res.status(200).json({
-    status: 'success',
-    data: null,
-    message: 'Email sent',
-  });
+  reply();
 });
 
 export default router;

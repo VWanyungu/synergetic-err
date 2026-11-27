@@ -9,6 +9,8 @@ export interface CacheClient {
 }
 
 const env = (process.env.NODE_ENV || 'development').toLowerCase();
+export const cacheProvider =
+  env === 'production' ? 'local-redis' : process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN ? 'upstash' : 'memory';
 let redis: CacheClient;
 
 if (env === 'production') {

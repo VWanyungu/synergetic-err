@@ -10,6 +10,7 @@ export interface Me {
   bannerUrl: string | null;
   departmentId: string | null;
   department: string | null;
+  divisionId: string | null;
   roles: { role: string; since: string; grantedBy: string | null }[];
 }
 

@@ -1,0 +1,10 @@
+# Local use only: publishes the app on this machine's ports (production is reached through Caddy and publishes nothing).
+#   docker network create caddy          # once
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+services:
+  backend:
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+  frontend:
+    ports:
+      - "${FRONTEND_PORT:-3003}:3003"

@@ -1,0 +1,140 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Enterprise Risk Register",
+  "colors": {
+    "primary": "#1f6b3a",
+    "light": "#4c9a62",
+    "dark": "#14522a"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "index",
+              "quickstart",
+              "roles/index"
+            ]
+          },
+          {
+            "group": "Common flows",
+            "pages": [
+              "common/signing-in",
+              "common/resetting-password",
+              "common/navigating",
+              "common/registers",
+              "common/risk-detail",
+              "common/notifications",
+              "common/profile"
+            ]
+          },
+          {
+            "group": "Risk Champion / Department Lead",
+            "pages": [
+              "roles/department/overview",
+              "roles/department/creating-a-risk",
+              "roles/department/mitigation-and-review",
+              "roles/department/closing-and-archiving"
+            ]
+          },
+          {
+            "group": "Division Lead",
+            "pages": [
+              "roles/division-lead/overview"
+            ]
+          },
+          {
+            "group": "Risk Officer",
+            "pages": [
+              "roles/risk-officer/overview",
+              "roles/risk-officer/oversight",
+              "roles/risk-officer/archive-requests"
+            ]
+          },
+          {
+            "group": "Admin",
+            "pages": [
+              "roles/admin/overview",
+              "roles/admin/managing-users"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/scoring",
+              "reference/dashboard",
+              "reference/heat-map",
+              "reference/reports",
+              "reference/faq"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Operations",
+        "groups": [
+          {
+            "group": "Running the register",
+            "pages": [
+              "operations/index",
+              "operations/deployment",
+              "operations/storage-and-backups",
+              "operations/monitoring",
+              "operations/runbook"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "redirects": [
+    {
+      "source": "/scoring",
+      "destination": "/reference/scoring"
+    },
+    {
+      "source": "/faq",
+      "destination": "/reference/faq"
+    },
+    {
+      "source": "/guides/dashboard",
+      "destination": "/reference/dashboard"
+    },
+    {
+      "source": "/guides/heat-map",
+      "destination": "/reference/heat-map"
+    },
+    {
+      "source": "/guides/reports",
+      "destination": "/reference/reports"
+    },
+    {
+      "source": "/guides/risk-registers",
+      "destination": "/common/registers"
+    },
+    {
+      "source": "/guides/risk-detail",
+      "destination": "/common/risk-detail"
+    },
+    {
+      "source": "/guides/notifications",
+      "destination": "/common/notifications"
+    },
+    {
+      "source": "/guides/profile",
+      "destination": "/common/profile"
+    },
+    {
+      "source": "/guides/creating-a-risk",
+      "destination": "/roles/department/creating-a-risk"
+    },
+    {
+      "source": "/guides/administration",
+      "destination": "/roles/admin/managing-users"
+    }
+  ]
+}

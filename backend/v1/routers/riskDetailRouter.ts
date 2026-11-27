@@ -4,6 +4,10 @@ import type { Knex } from 'knex';
 import db from '../database/dbSetup.js';
 import { sendRouteError } from '../utils/errors.js';
 import { uploadToCloudinary, isStorageConfigured } from '../utils/cloudinary.js';
+import { R2_PRIVATE_PREFIX, signedDownloadUrl } from '../utils/storage.js';
+import { DEPARTMENT_ROLES, scopedDivision } from '../utils/scope.js';
+import { Cache } from '../database/utils/cache.js';
+import { CATEGORIES_KEY } from './risksRouter.js';
 
 const router = express.Router();
 
@@ -17,6 +21,20 @@ const fail = (res: express.Response, err: unknown) =>
 const ok = (res: express.Response, data: unknown, message: string, status = 200) => res.status(status).json({ status: 'success', data, message });
 
 const uuid = Joi.string().uuid().required();
+
+// A Division Lead is read-only and sees only risks that affect their division. Every route under /:id passes through here.
+router.param('id', async (req, res, next, id) => {
+  try {
+    const division = await scopedDivision(req.user!.userId);
+    if (!division) return next();
+    if (req.method !== 'GET') throw new HttpError(403, 'Your role is read-only.');
+    if (!/^[0-9a-f-]{36}$/i.test(id) || !(await db('risk_divisions').where({ risk_id: id, division_id: division }).first('risk_id')))
+      throw new HttpError(403, 'This risk does not affect your division.');
+    next();
+  } catch (err) {
+    fail(res, err);
+  }
+});
 function check<T>(schema: Joi.Schema, value: unknown): T {
   const { error, value: v } = schema.validate(value, { abortEarly: false, stripUnknown: true });
   if (error) throw new HttpError(400, error.message);
@@ -24,7 +42,7 @@ function check<T>(schema: Joi.Schema, value: unknown): T {
 }
 
 const roleLabel = (roles: string[]) =>
-  roles.includes('Risk Officer') ? 'Risk Officer' : roles.includes('Risk Champion') ? 'Risk Champion' : roles.includes('Admin') ? 'Admin' : null;
+  roles.includes('Risk Officer') ? 'Risk Officer' : roles.includes('Department Lead') ? 'Department Lead' : roles.includes('Risk Champion') ? 'Risk Champion' : roles.includes('Division Lead') ? 'Division Lead' : roles.includes('Admin') ? 'Admin' : null;
 
 type Viewer = { id: string; roles: string[]; departmentId: string | null };
 async function viewer(req: express.Request): Promise<Viewer> {
@@ -37,9 +55,9 @@ async function viewer(req: express.Request): Promise<Viewer> {
 }
 
 // Edit, transfer, close and archive share one rule (FR-SCORE-003): Admin and Risk Officer anywhere,
-// a Risk Champion only in their own department. A transferred risk therefore turns read-only for its old department.
+// a Risk Champion or Department Lead only in their own department. A transferred risk therefore turns read-only for its old department.
 const canEdit = (v: Viewer, departmentId: string) =>
-  v.roles.includes('Admin') || v.roles.includes('Risk Officer') || (v.roles.includes('Risk Champion') && v.departmentId === departmentId);
+  v.roles.includes('Admin') || v.roles.includes('Risk Officer') || (v.roles.some((r) => DEPARTMENT_ROLES.includes(r)) && v.departmentId === departmentId);
 
 async function loadRisk(id: string) {
   const risk = await db('risks').where({ id }).first();
@@ -65,12 +83,11 @@ const monthOf = (d = new Date()) => `${d.getUTCFullYear()}-${String(d.getUTCMont
 router.get('/:id', async (req, res) => {
   try {
     const id = check<string>(uuid, req.params.id);
-    const risk = await loadRisk(id);
-    const v = await viewer(req);
-    const pendingArchive = await db('archive_requests as a').join('users as u', 'u.id', 'a.requested_by').where({ 'a.risk_id': id, 'a.status': 'pending' }).first('a.id', 'a.created_at', 'u.first_name', 'u.last_name');
-    const [dept, owner, divisions, counts, actors, versions, transfers] = await Promise.all([
-      db('departments').where({ id: risk.department_id }).first('id', 'name'),
-      risk.owner_id ? db('users').where({ id: risk.owner_id }).first('id', 'first_name', 'last_name', 'department_id') : null,
+    // Two rounds instead of fifteen in a row: everything that needs only the id, then everything that needs the risk's owner or author.
+    const [risk, v, pendingArchive, divisions, counts, actors, versions, transfers] = await Promise.all([
+      loadRisk(id),
+      viewer(req),
+      db('archive_requests as a').join('users as u', 'u.id', 'a.requested_by').where({ 'a.risk_id': id, 'a.status': 'pending' }).first('a.id', 'a.created_at', 'u.first_name', 'u.last_name'),
       db('risk_divisions as rd').join('divisions as d', 'd.id', 'rd.division_id').where('rd.risk_id', id).select('d.id', 'd.name', 'd.code').orderBy('d.name'),
       db.raw(
         `select (select count(*) from risk_activity where risk_id = ? and type = 'comment')::int as comments,
@@ -83,11 +100,20 @@ router.get('/:id', async (req, res) => {
       db('risk_description_versions as v').join('users as u', 'u.id', 'v.edited_by').where('v.risk_id', id).orderBy('v.created_at', 'desc').select('u.first_name', 'u.last_name', 'v.created_at'),
       db('risk_activity as a').leftJoin('users as u', 'u.id', 'a.actor_id').where({ 'a.risk_id': id, 'a.type': 'transferred' }).orderBy('a.created_at', 'desc').select('a.data', 'a.created_at', 'u.first_name', 'u.last_name'),
     ]);
-    const ownerRoles = owner ? await db('roles').where({ user_id: owner.id }).whereNull('revoked_at').pluck('role') : [];
-    const ownerDept = owner?.department_id ? (await db('departments').where({ id: owner.department_id }).first('name'))?.name : null;
-    const createdRow = await db('risks').where({ id }).first('created_at', 'last_reviewed_at', 'created_by');
-    const createdBy = createdRow.created_by ? fullName(await db('users').where({ id: createdRow.created_by }).first('first_name', 'last_name')) : null;
-    const loggedByRole = createdRow.created_by ? roleLabel(await db('roles').where({ user_id: createdRow.created_by }).whereNull('revoked_at').pluck('role')) : null;
+    const createdByRow = (risk as unknown as { created_by: string | null; created_at: Date; last_reviewed_at: Date | null });
+    const [dept, owner, ownerRoles, author, authorRoles] = await Promise.all([
+      db('departments').where({ id: risk.department_id }).first('id', 'name'),
+      risk.owner_id
+        ? db('users as u').leftJoin('departments as od', 'od.id', 'u.department_id').where('u.id', risk.owner_id).first('u.id', 'u.first_name', 'u.last_name', 'od.name as department_name')
+        : null,
+      risk.owner_id ? db('roles').where({ user_id: risk.owner_id }).whereNull('revoked_at').pluck('role') : [],
+      createdByRow.created_by ? db('users').where({ id: createdByRow.created_by }).first('first_name', 'last_name') : null,
+      createdByRow.created_by ? db('roles').where({ user_id: createdByRow.created_by }).whereNull('revoked_at').pluck('role') : [],
+    ]);
+    const ownerDept = owner?.department_name ?? null;
+    const createdRow = createdByRow;
+    const createdBy = fullName(author);
+    const loggedByRole = createdByRow.created_by ? roleLabel(authorRoles) : null;
     ok(
       res,
       {
@@ -118,7 +144,7 @@ router.get('/:id', async (req, res) => {
         transfer: transfers[0] ? { at: transfers[0].created_at, ...transfers[0].data } : null,
         // Every transfer, newest first, for the Transferred card's history.
         transfers: transfers.map((t) => ({ at: t.created_at, from: t.data.from ?? null, to: t.data.to ?? null, by: fullName(t.first_name ? t : null) })),
-        can: { edit: canEdit(v, risk.department_id), archiveDirect: v.roles.includes('Admin') || v.roles.includes('Risk Officer') },
+        can: { edit: canEdit(v, risk.department_id), comment: !(await scopedDivision(v.id)), archiveDirect: v.roles.includes('Admin') || v.roles.includes('Risk Officer') },
         archiveRequest: pendingArchive ? { id: pendingArchive.id, requestedAt: pendingArchive.created_at, requestedBy: fullName(pendingArchive) } : null,
       },
       'Risk retrieved successfully',
@@ -139,7 +165,7 @@ router.get('/:id/activity', async (req, res) => {
     const ids = rows.map((r) => r.actor_id).filter(Boolean);
     const [grants, files, edits] = await Promise.all([
       db('roles').whereIn('user_id', ids).whereNull('revoked_at').select('user_id', 'role'),
-      db('risk_attachments').where({ risk_id: id }).whereNotNull('activity_id').select('id', 'activity_id', 'name', 'mime_type', 'bytes', 'url'),
+      db('risk_attachments').where({ risk_id: id }).whereNotNull('activity_id').select('id', 'activity_id', 'name', 'mime_type', 'bytes'),
       db('risk_comment_versions').whereIn('activity_id', rows.map((r) => r.id)).select('activity_id'),
     ]);
     const rolesOf = (uid: string) => roleLabel(grants.filter((g) => g.user_id === uid).map((g) => g.role));
@@ -153,7 +179,7 @@ router.get('/:id/activity', async (req, res) => {
         createdAt: r.created_at,
         editedAt: r.edited_at,
         actor: r.actor_id ? { id: r.actor_id, name: fullName(r), role: rolesOf(r.actor_id) } : null,
-        attachments: files.filter((f) => f.activity_id === r.id).map((f) => ({ id: f.id, name: f.name, mimeType: f.mime_type, bytes: f.bytes, url: f.url })),
+        attachments: files.filter((f) => f.activity_id === r.id).map((f) => ({ id: f.id, name: f.name, mimeType: f.mime_type, bytes: f.bytes })),
         edited: edits.some((e) => e.activity_id === r.id),
       })),
       'Activity retrieved successfully',
@@ -277,6 +303,7 @@ router.patch('/:id', async (req, res) => {
       }
       await t('risks').where({ id: risk.id }).update(set);
     });
+    if (b.category !== undefined) await Cache.del(CATEGORIES_KEY);
     ok(res, null, 'Risk updated successfully');
   } catch (err) {
     fail(res, err);
@@ -440,8 +467,25 @@ router.post('/:id/attachments', async (req, res) => {
     });
     const [row] = await db('risk_attachments')
       .insert({ risk_id: id, uploaded_by: req.user!.userId, name: b.name, mime_type: b.mimeType, bytes: up.bytes, url: up.url, public_id: up.publicId })
-      .returning(['id', 'name', 'mime_type', 'bytes', 'url']);
-    ok(res, { id: row.id, name: row.name, mimeType: row.mime_type, bytes: row.bytes, url: row.url }, 'File uploaded', 201);
+      .returning(['id', 'name', 'mime_type', 'bytes']);
+    ok(res, { id: row.id, name: row.name, mimeType: row.mime_type, bytes: row.bytes }, 'File uploaded', 201);
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+// GET /risks/:id/attachments/:attachmentId/url — a short-lived link to one file. The id guard above has already refused anyone who may not see this risk.
+router.get('/:id/attachments/:attachmentId/url', async (req, res) => {
+  try {
+    const id = check<string>(uuid, req.params.id);
+    await loadRisk(id);
+    const attachmentId = check<string>(uuid, req.params.attachmentId);
+    const file = await db('risk_attachments').where({ id: attachmentId, risk_id: id }).first('name', 'mime_type', 'url', 'public_id');
+    if (!file) throw new HttpError(404, 'That file does not exist.');
+    // Files kept in R2 are private and get a signed link; Cloudinary files (development and staging) are already public.
+    const isPrivate = String(file.url).startsWith(R2_PRIVATE_PREFIX);
+    const url = isPrivate ? await signedDownloadUrl(file.public_id, file.name, file.mime_type).catch(() => { throw new HttpError(502, 'The file could not be opened. Try again.'); }) : file.url;
+    ok(res, { url, expiresInSeconds: isPrivate ? 300 : null }, 'File link retrieved successfully');
   } catch (err) {
     fail(res, err);
   }

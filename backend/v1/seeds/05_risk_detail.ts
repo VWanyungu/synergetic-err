@@ -15,7 +15,7 @@ const PEOPLE: [string, string, string | null][] = [
   [PETER, 'Risk Champion', 'Legal'],
   [BRIAN, 'Risk Champion', 'Finance'],
   [ACHIENG, 'Risk Champion', 'Projects'],
-  [FAITH, 'Risk Champion', 'People - Talent, Licences, Labour, Welfare'],
+  [FAITH, 'Risk Champion', 'People'],
   [GRACE, 'Risk Champion', 'HSSE'],
   [KEVIN, 'Risk Champion', 'Commercial'],
 ];

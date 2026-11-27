@@ -30,7 +30,7 @@ const GROUPS = [
 ] as const;
 
 /** The navbar's search field, as in Gas Connect: results drop down under it while it is focused; Escape or an outside click collapses them. */
-export function GlobalSearch() {
+export function GlobalSearch({ mobile = false, onNavigate }: { mobile?: boolean; onNavigate?: () => void }) {
   const router = useRouter();
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +65,7 @@ export function GlobalSearch() {
   const go = (href: string) => {
     setOpen(false);
     setQuery("");
+    onNavigate?.();
     router.push(href);
   };
 
@@ -86,7 +87,7 @@ export function GlobalSearch() {
 
   return (
     <div ref={boxRef} className="relative hidden xl:block">
-      <label className="flex h-9 w-[280px] items-center gap-2.5 rounded-full bg-field pl-3.5 pr-2">
+      <label className={cn("flex items-center gap-2.5 rounded-full bg-field pl-3.5 pr-2", mobile ? "h-11 w-full" : "h-9 w-[280px]")}>
         <Search className="size-[18px] shrink-0 text-ink-muted" aria-hidden />
         <input
           ref={inputRef}
@@ -100,13 +101,13 @@ export function GlobalSearch() {
           onKeyDown={onKeyDown}
           placeholder="Search risks, IDs, owners"
           aria-label="Search risks, registers and mitigation plans"
-          className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-placeholder"
+          className={cn("min-w-0 flex-1 bg-transparent outline-none placeholder:text-placeholder", mobile ? "text-[16px]" : "text-[14px]")}
         />
-        {!query && <kbd className="rounded-sm border border-line bg-surface px-1.5 py-0.5 font-mono text-[13px] text-ink-muted">⌘K</kbd>}
+        {!query && !mobile && <kbd className="rounded-sm border border-line bg-surface px-1.5 py-0.5 font-mono text-[13px] text-ink-muted">⌘K</kbd>}
       </label>
 
       {open && (
-        <div role="listbox" aria-label="Search results" className="absolute right-0 top-[calc(100%+8px)] z-50 flex w-[400px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-[0_8px_30px_rgba(17,17,17,0.1)]">
+        <div role="listbox" aria-label="Search results" className={cn("flex flex-col overflow-hidden rounded-xl border border-line bg-surface", mobile ? "mt-3 w-full" : "absolute right-0 top-[calc(100%+8px)] z-50 w-[400px] shadow-[0_8px_30px_rgba(17,17,17,0.1)]")}>
           <div className="max-h-[52vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {query.length === 0 && <p className="px-4 py-5 text-[13px] text-ink-muted">Type to search risks, registers and mitigation plans.</p>}
             {tooShort && <p className="px-4 py-5 text-[13px] text-ink-muted">Keep typing: at least {MIN_QUERY} characters.</p>}
@@ -140,7 +141,7 @@ export function GlobalSearch() {
             })}
           </div>
           <div className="flex items-center justify-between border-t border-line px-4 py-2 text-[11px] text-ink-muted">
-            <span>↑↓ to move · ↵ to open · Esc to close</span>
+            <span>{mobile ? "Tap a result to open" : "↑↓ to move · ↵ to open · Esc to close"}</span>
             {isFetching && <span>Searching…</span>}
           </div>
         </div>

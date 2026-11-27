@@ -8,12 +8,15 @@ export function Pagination({
   perPage,
   total,
   label,
+  compact,
   onPageChange,
 }: {
   page: number;
   perPage: number;
   total: number;
   label: string;
+  /** Narrow columns: previous/next only, count above. */
+  compact?: boolean;
   onPageChange: (page: number) => void;
 }) {
   const last = Math.max(Math.ceil(total / perPage), 1);
@@ -33,8 +36,21 @@ export function Pagination({
     </button>
   );
 
+  const short = (
+      <div className="flex items-center justify-between gap-2 pt-4 lg:px-3">
+        <span className="text-[13px] text-ink-muted">{from}–{to} of {total}</span>
+        <div className="flex items-center gap-1.5">
+          {nav(page - 1, page === 1, "Previous page", <ChevronLeft className="size-3.5" />)}
+          {nav(page + 1, page === last, "Next page", <ChevronRight className="size-3.5" />)}
+        </div>
+      </div>
+    );
+  if (compact) return short;
+
   return (
-    <div className="flex items-center justify-between gap-3 pt-4">
+    <>
+    <div className="sm:hidden">{short}</div>
+    <div className="hidden items-center justify-between gap-3 pt-4 sm:flex">
       <span className="text-[13px] text-ink-muted">
         {from}–{to} of {total} {label}
       </span>
@@ -56,5 +72,6 @@ export function Pagination({
         {nav(last, page === last, "Last page", <ChevronsRight className="size-3.5" />)}
       </div>
     </div>
+    </>
   );
 }

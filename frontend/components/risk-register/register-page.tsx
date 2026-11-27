@@ -12,6 +12,8 @@ import { useDivisions, useRegisters } from "@/hooks/queries/use-registers";
 import { useRiskFormOptions } from "@/hooks/queries/use-create-risk";
 import { usePeriod } from "@/contexts/period-context";
 import { useDepartments } from "@/hooks/queries/use-risks";
+import { useMe } from "@/hooks/queries/use-me";
+import { isDivisionLead } from "@/lib/roles";
 
 // Mitigation is the risk's chosen response.
 const MITIGATION = [
@@ -63,6 +65,8 @@ export function RegisterPage({ mode, id }: { mode: "department" | "division"; id
   const filters = { ...state, departmentId: routeDepartment, divisionId: division ? id : "", month };
   const departments = useDepartments();
   const owners = useRiskFormOptions();
+  const me = useMe().data;
+  const leadOnly = !!me && isDivisionLead(me.roles.map((r) => r.role));
   const registers = useRegisters();
   const divisions = useDivisions();
   // A Risk Champion has exactly one register and one division: their own. They are fixed, not filters to drop.
@@ -131,6 +135,7 @@ export function RegisterPage({ mode, id }: { mode: "department" | "division"; id
     <div className="flex flex-col gap-7">
       <PageHeader
         kind={mode}
+        canCreate={!leadOnly}
         name={division ? nameOf(id, true) : routeDepartment ? nameOf(routeDepartment, false) : "All departments"}
         switcher={
           division
@@ -175,7 +180,7 @@ export function RegisterPage({ mode, id }: { mode: "department" | "division"; id
             }
           />
           {data && data.total > 0 && (
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[14px] leading-normal text-ink-muted">{summary}</p>
               <div className="flex gap-2">
                 <button type="button" className="btn-secondary btn-auto" disabled={filters.page <= 1} onClick={() => setState((f) => ({ ...f, page: f.page - 1 }))}>

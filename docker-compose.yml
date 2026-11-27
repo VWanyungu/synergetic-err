@@ -7,8 +7,6 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-err-syn}
-    ports:
-      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,8 +21,6 @@ services:
     image: redis:7-alpine
     container_name: err-redis
     restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -56,6 +52,17 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-err-syn}
+      # The app reads the prefixed set for NODE_ENV=staging|production, so pass the same values to both.
+      STAGING_DB_HOST: db
+      STAGING_DB_PORT: 5432
+      STAGING_DB_USER: ${DB_USER:-postgres}
+      STAGING_DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      STAGING_DB_NAME: ${DB_NAME:-err-syn}
+      PROD_DB_HOST: db
+      PROD_DB_PORT: 5432
+      PROD_DB_USER: ${DB_USER:-postgres}
+      PROD_DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      PROD_DB_NAME: ${DB_NAME:-err-syn}
       REDIS_URL: redis://redis:6379
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -78,17 +85,19 @@ services:
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+      R2_PUBLIC_BUCKET_NAME: ${R2_PUBLIC_BUCKET_NAME:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    # Caddy reaches the backend as err-backend:8080 over the shared network; nothing is published on the host.
     networks:
       - err-network
+      - caddy
 
   frontend:
     image: ${FRONTEND_IMAGE:-vwanyungu/synergetic-err-frontend}:${IMAGE_TAG:-latest}
@@ -106,16 +115,21 @@ services:
       NODE_ENV: production
       PORT: 3003
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-    ports:
-      - "${FRONTEND_PORT:-3003}:3003"
+    # Caddy reaches the frontend as err-frontend:3003.
     networks:
       - err-network
+      - caddy
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
+  # Private: database, cache and the app talk here and nowhere else.
   err-network:
     driver: bridge
+  # Shared with Caddy, which must already exist: docker network create caddy
+  caddy:
+    external: true
+    name: ${CADDY_NETWORK:-caddy}
 

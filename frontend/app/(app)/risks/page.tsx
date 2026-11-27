@@ -22,7 +22,7 @@ function AllRegisters() {
     <div className="flex flex-col gap-10">
       <header className="flex items-center justify-between">
         <div className="flex flex-col gap-4">
-          <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.96px]">All registers</h1>
+          <h1 className="text-[26px] font-semibold sm:text-[32px] leading-[1.15] tracking-[-0.96px]">All registers</h1>
           {/* Segmented switch: a raised pill slides under the active label. */}
           <div className="relative grid w-max grid-cols-2 rounded-full bg-field p-1" role="tablist" aria-label="Register type">
             <span

@@ -1,0 +1,168 @@
+---
+title: "Storage and backups"
+description: "Plan for Cloudflare R2: the attachments bucket the app writes to, the private backups bucket, nightly database backups, retention and restore."
+---
+
+Cloudflare R2 holds three kinds of data in three buckets, each with its own access.
+
+| Bucket | Holds | Written by | Readable by |
+|---|---|---|---|
+| `err-attachments` | risk attachments | the backend | **private**: only through signed links the API issues |
+| `err-public` | profile pictures and banners | the backend | public, from `files.err.example.com` |
+| `err-backups` | nightly database dumps | the backup script | nobody but the backup tokens |
+
+R2 has no egress fees and speaks the S3 API, so the backend uses `@aws-sdk/client-s3` against `https://<account-id>.r2.cloudflarestorage.com`.
+
+## Attachments: private, with signed links
+
+Attachments can hold sensitive material, so the bucket has **no public access and no custom domain**. The app never stores or returns a link anyone can open. Instead:
+
+1. The risk page shows each attachment as a button.
+2. Clicking it calls `GET /risks/:id/attachments/:attachmentId/url`.
+3. The API checks that the signed-in user may see that risk (the same rules as the rest of the risk page, including a Division Lead being limited to their division), then returns a link signed for **5 minutes**.
+4. The browser opens the link. Images and PDFs open in the tab; other files download under their own name.
+
+A link copied out of the page stops working after 5 minutes, and nobody without an account can get one. The signing happens in the backend with the R2 token, so the browser never sees the credentials. In development and staging, files are in Cloudinary and the endpoint returns the Cloudinary link instead.
+
+### Create it
+
+1. Cloudflare dashboard, **R2**, **Create bucket**, name `err-attachments`. Leave **Public access** disabled and add no custom domain.
+2. **R2**, **Manage API tokens**, create `err-backend`: **Object Read & Write**, scoped to `err-attachments` and `err-public` only.
+
+### Wire it up
+
+```bash
+# VPS .env
+NODE_ENV=production
+R2_ACCOUNT_ID=<from the R2 overview page>
+R2_ACCESS_KEY_ID=<token access key>
+R2_SECRET_ACCESS_KEY=<token secret>
+R2_BUCKET_NAME=err-attachments
+```
+
+After the first deploy, attach a file to a risk, open it from the page, and confirm that the bucket's object URL (the `r2.cloudflarestorage.com` address) returns an access error when opened directly.
+
+## Profile pictures: a separate public bucket
+
+Avatars appear as plain images in tables, lists and comments, often dozens at once. A link that expires after minutes would break them whenever a page stayed open, and a different link every time would defeat caching. So pictures go to their own bucket, which is public by design. Treat anything in it as public.
+
+1. Create `err-public`. Under **Settings**, **Custom domains**, connect `files.err.example.com`. Do not use the `r2.dev` URL: it is rate-limited and has no caching.
+2. Add to `.env`:
+
+```bash
+R2_PUBLIC_BUCKET_NAME=err-public
+R2_PUBLIC_URL=https://files.err.example.com
+```
+
+If these are missing, profile uploads fail with a clear error and attachments are unaffected.
+
+### Housekeeping
+
+- Add a lifecycle rule on both buckets to **abort incomplete multipart uploads** after 1 day.
+- Turn on **Object versioning** on `err-attachments` only if you want undelete; it grows storage. Otherwise a deleted file is gone.
+- No CORS rule is needed: uploads go from the browser to the backend, then to R2, server to server.
+- Files already uploaded before this change point at the old public address. A production system that has never had R2 attachments has none, so nothing needs migrating. If any exist, copy them to the private bucket and set their `url` column to `r2:<key>`.
+
+## Backups bucket
+
+### Create it
+
+Create `err-backups` (private, no custom domain) and a second token, `err-backup-writer`, with **Object Read & Write** scoped to this bucket only. Keep it separate from the app's token so a leaked app credential cannot delete backups.
+
+### The backup script
+
+Install once on the VPS as `/opt/err/backup.sh` (mode `700`, owned by `deploy`). It needs `rclone`.
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+cd /var/www/synergetic-err
+set -a; . ./.env; set +a
+
+STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+FILE="/tmp/err-${STAMP}.sql.gz"
+
+# Consistent logical dump, compressed, taken inside the running database container
+docker compose exec -T db pg_dump -U "$DB_USER" -d "$DB_NAME" --no-owner --format=plain | gzip -9 > "$FILE"
+
+# A dump under 10 KB is almost certainly an error, not a database
+[ "$(stat -c%s "$FILE")" -gt 10240 ] || { echo "dump too small"; exit 1; }
+
+rclone copyto "$FILE" "r2:err-backups/daily/err-${STAMP}.sql.gz" --s3-no-check-bucket
+rm -f "$FILE"
+
+# Tell the monitor it worked (see Monitoring). Silence means it did not.
+curl -fsS "$BACKUP_HEARTBEAT_URL" > /dev/null
+```
+
+`~/.config/rclone/rclone.conf` for the `deploy` user:
+
+```ini
+[r2]
+type = s3
+provider = Cloudflare
+access_key_id = <err-backup-writer key>
+secret_access_key = <err-backup-writer secret>
+endpoint = https://<account-id>.r2.cloudflarestorage.com
+acl = private
+```
+
+Schedule it with cron (`crontab -e` as `deploy`), at 02:00 East Africa Time:
+
+```cron
+0 23 * * * /opt/err/backup.sh >> /var/log/err-backup.log 2>&1
+```
+
+The server runs on UTC, so 23:00 UTC is 02:00 EAT.
+
+### What gets backed up
+
+| Data | Backed up by | Notes |
+|---|---|---|
+| PostgreSQL (risks, users, comments, history, snapshots) | nightly `pg_dump` | the only data that cannot be rebuilt |
+| Attachments and images | live in R2 already | not in the dump; protect with versioning if needed |
+| Redis | not backed up | holds only caches and revoked-token markers; losing it signs users out, nothing more |
+| `.env` and the Caddyfile | a copy in the team password manager | without them a rebuilt server cannot start |
+| Code and images | GitHub and Docker Hub | every release is tagged by SHA |
+
+### Retention
+
+Use R2 lifecycle rules on `err-backups`, so no script does deletion and the writer token never needs delete rights:
+
+| Prefix | Keep | How |
+|---|---|---|
+| `daily/` | 30 days | lifecycle rule: delete after 30 days |
+| `monthly/` | 12 months | on the 1st of each month, copy that night's file to `monthly/` and give the prefix a 365-day rule |
+
+```bash
+# add to the end of backup.sh
+[ "$(date -u +%d)" = "01" ] && rclone copyto "r2:err-backups/daily/err-${STAMP}.sql.gz" "r2:err-backups/monthly/err-${STAMP}.sql.gz"
+```
+
+### Encryption
+
+Backups hold every user's name and email and all risk content. R2 encrypts at rest, but for defence in depth encrypt the dump before upload with `age` or `gpg` and keep the key in the password manager and offline. A backup you cannot decrypt is not a backup, so test the restore with the encrypted file.
+
+## Restore
+
+Always restore into a scratch database first and look at the data before touching production.
+
+```bash
+# 1. Fetch the newest dump
+rclone ls r2:err-backups/daily | sort -k2 | tail -3
+rclone copyto r2:err-backups/daily/err-<stamp>.sql.gz /tmp/restore.sql.gz
+
+# 2. Restore into a scratch database
+docker compose exec -T db psql -U "$DB_USER" -c 'CREATE DATABASE err_restore;'
+gunzip -c /tmp/restore.sql.gz | docker compose exec -T db psql -U "$DB_USER" -d err_restore
+
+# 3. Sanity check
+docker compose exec -T db psql -U "$DB_USER" -d err_restore -c \
+  "select (select count(*) from risks) risks, (select count(*) from users) users, (select max(created_at) from risks) newest;"
+```
+
+To replace production, follow the [runbook](/operations/runbook#restore-the-database). Run the scratch restore above **monthly** and write the date and result in the runbook log, because an untested backup is an assumption.
+
+## Cost
+
+R2 charges for storage (about $0.015 per GB a month) and requests, with no egress charge. For a register of this size, attachments plus 30 daily dumps will stay well under a few dollars a month. Set a billing notification in Cloudflare anyway.

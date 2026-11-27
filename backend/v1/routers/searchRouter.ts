@@ -2,6 +2,7 @@ import express from 'express';
 import Joi from 'joi';
 import db from '../database/dbSetup.js';
 import { sendRouteError } from '../utils/errors.js';
+import { scopedDivision } from '../utils/scope.js';
 
 const router = express.Router();
 
@@ -21,11 +22,15 @@ router.get('/', async (req, res) => {
   const like = `%${q.replace(/[%_\\]/g, '\\$&')}%`;
 
   try {
+    // A Division Lead searches only the risks affecting their division, and gets no registers to browse.
+    const own = await scopedDivision(req.user!.userId);
+    const inDivision = (col: string) => (qb: import('knex').Knex.QueryBuilder) => own && qb.whereExists(db('risk_divisions as rd').whereRaw(`rd.risk_id = ${col}`).where('rd.division_id', own));
     const [risks, registers, plans] = await Promise.all([
       db('risks as r')
         .join('departments as d', 'd.id', 'r.department_id')
         .leftJoin('users as u', 'u.id', 'r.owner_id')
         .whereNull('r.archived_at')
+        .modify(inDivision('r.id'))
         .where((w) =>
           w
             .whereILike('r.title', like)
@@ -39,10 +44,11 @@ router.get('/', async (req, res) => {
       Promise.all([
         db('departments').whereILike('name', like).orderBy('name').limit(limit).select('id', 'name as title', db.raw(`'Department register' as subtitle`)),
         db('divisions').whereILike('name', like).orderBy('name').limit(limit).select('id', 'name as title', db.raw(`'Division register' as subtitle`)),
-      ]).then(([depts, divs]) => [...depts, ...divs].slice(0, limit)),
+      ]).then(([depts, divs]) => (own ? [] : [...depts, ...divs].slice(0, limit))),
       db('mitigation_actions as a')
         .join('risks as r', 'r.id', 'a.risk_id')
         .whereNull('r.archived_at')
+        .modify(inDivision('r.id'))
         .whereILike('a.title', like)
         .orderBy('a.title')
         .limit(limit)
