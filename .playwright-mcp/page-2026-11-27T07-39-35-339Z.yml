@@ -1,0 +1,176 @@
+- generic [ref=f2e1]:
+  - banner [ref=f2e2]:
+    - link [ref=f2e3] [cursor=pointer]:
+      - /url: /
+      - img "Synergetic" [ref=f2e4]
+    - navigation [ref=f2e5]:
+      - link "Dashboard" [ref=f2e6] [cursor=pointer]:
+        - /url: /
+      - link "Registers" [ref=f2e8] [cursor=pointer]:
+        - /url: /risks
+      - link "Heat map" [ref=f2e11] [cursor=pointer]:
+        - /url: /risks/distribution
+      - link "Reports" [ref=f2e12] [cursor=pointer]:
+        - /url: /reports
+      - link "Admin" [ref=f2e164] [cursor=pointer]:
+        - /url: /admin
+    - generic [ref=f2e14]:
+      - textbox "Search risks, registers and mitigation plans" [ref=f2e18]:
+        - /placeholder: Search risks, IDs, owners
+      - generic [ref=f2e19]: ⌘K
+    - button "Toggle dark mode" [ref=f2e20] [cursor=pointer]
+    - link "Notifications" [ref=f2e30] [cursor=pointer]:
+      - /url: /notifications
+    - link "New risk" [ref=f2e35] [cursor=pointer]:
+      - /url: /risks/new
+    - generic [ref=f2e37]:
+      - button "Account menu" [active] [ref=f2e38] [cursor=pointer]
+      - generic [ref=f2e166]:
+        - paragraph [ref=f2e167]: admin@err.local
+        - link "My profile" [ref=f2e168] [cursor=pointer]:
+          - /url: /profile
+        - button "Log out" [ref=f2e169] [cursor=pointer]
+  - main [ref=f2e39]:
+    - generic [ref=f2e40]:
+      - generic [ref=f2e41]:
+        - navigation "Breadcrumb" [ref=f2e42]:
+          - link "All registers" [ref=f2e43] [cursor=pointer]:
+            - /url: /risks
+          - link "Department register" [ref=f2e46] [cursor=pointer]:
+            - /url: /risks
+          - generic [ref=f2e49]: All departments
+          - button "Switch register" [ref=f2e171] [cursor=pointer]
+        - generic [ref=f2e50]:
+          - heading "Risk Register" [level=1] [ref=f2e51]
+          - link "New risk" [ref=f2e52] [cursor=pointer]:
+            - /url: /risks/new
+      - search [ref=f2e54]:
+        - textbox "Search risks" [ref=f2e55]
+        - button "Search" [ref=f2e56] [cursor=pointer]
+      - generic [ref=f2e61]:
+        - button "Category All categories" [ref=f2e63] [cursor=pointer]:
+          - generic [ref=f2e64]: Category
+          - generic [ref=f2e65]: All categories
+        - button "Mitigation Any" [ref=f2e69] [cursor=pointer]:
+          - generic [ref=f2e70]: Mitigation
+          - generic [ref=f2e71]: Any
+        - button "Period Nov 2026" [ref=f2e75] [cursor=pointer]:
+          - generic [ref=f2e76]: Period
+          - generic [ref=f2e77]: Nov 2026
+        - button "Order Latest" [ref=f2e81] [cursor=pointer]:
+          - generic [ref=f2e82]: Order
+          - generic [ref=f2e83]: Latest
+      - generic [ref=f2e86]:
+        - generic [ref=f2e87]:
+          - generic [ref=f2e88]: Risk
+          - button "Department" [ref=f2e90] [cursor=pointer]
+          - generic [ref=f2e93]:
+            - button "Filter by rating" [ref=f2e94] [cursor=pointer]: Rating
+            - button "Sort by rating, currently not sorted" [ref=f2e95] [cursor=pointer]
+          - button "Owner" [ref=f2e100] [cursor=pointer]
+          - button "Status" [ref=f2e104] [cursor=pointer]
+          - button "Last review" [ref=f2e108] [cursor=pointer]
+        - button "Unpatched ERP servers exposed to ransomware Technology & Cybersecurity IT 16 WO Wanjiru Otieno Active 03 Nov 2026" [ref=f2e175] [cursor=pointer]:
+          - generic [ref=f2e179]:
+            - link "Unpatched ERP servers exposed to ransomware" [ref=f2e180]:
+              - /url: /risks/4ac1c373-ad06-4b03-866b-324194bbc098
+            - generic [ref=f2e181]: Technology & Cybersecurity
+          - generic [ref=f2e182]: IT
+          - generic [ref=f2e183]: "16"
+          - generic [ref=f2e184]:
+            - generic "Wanjiru Otieno" [ref=f2e185]: WO
+            - generic [ref=f2e186]: Wanjiru Otieno
+          - generic [ref=f2e187]: Active
+          - generic [ref=f2e192]: 03 Nov 2026
+        - button "Lubricant and fuel stock-outs at remote line construction sites Supply Chain & Procurement Supply Chain 6 AO Achieng Ouma Active 21 Aug 2026" [ref=f2e193] [cursor=pointer]:
+          - generic [ref=f2e197]:
+            - link "Lubricant and fuel stock-outs at remote line construction sites" [ref=f2e198]:
+              - /url: /risks/34b32cd1-7631-444b-8855-b747cf39d22b
+            - generic [ref=f2e199]: Supply Chain & Procurement
+          - generic [ref=f2e200]: Supply Chain
+          - generic [ref=f2e201]: "6"
+          - generic [ref=f2e202]:
+            - generic "Achieng Ouma" [ref=f2e203]: AO
+            - generic [ref=f2e204]: Achieng Ouma
+          - generic [ref=f2e205]: Active
+          - generic [ref=f2e210]: 21 Aug 2026
+        - button "Strategic spare parts inventory buffer falling below safety levels Operational Supply Chain 12 PN Peter Njoroge Active 04 Sep 2026" [ref=f2e211] [cursor=pointer]:
+          - generic [ref=f2e215]:
+            - link "Strategic spare parts inventory buffer falling below safety levels" [ref=f2e216]:
+              - /url: /risks/fa6f395b-fca5-4d3f-bba0-f556012b2c51
+            - generic [ref=f2e217]: Operational
+          - generic [ref=f2e218]: Supply Chain
+          - generic [ref=f2e219]: "12"
+          - generic [ref=f2e220]:
+            - generic "Peter Njoroge" [ref=f2e221]: PN
+            - generic [ref=f2e222]: Peter Njoroge
+          - generic [ref=f2e223]: Active
+          - generic [ref=f2e228]: 04 Sep 2026
+        - button "Substandard aggregate deliveries failing civil structural tests Supply Chain & Procurement Supply Chain 8 FW Fidelis Wanalwenge Active 11 Sep 2026" [ref=f2e229] [cursor=pointer]:
+          - generic [ref=f2e233]:
+            - link "Substandard aggregate deliveries failing civil structural tests" [ref=f2e234]:
+              - /url: /risks/7537dd4e-accb-43a7-9d38-528f2e8c545c
+            - generic [ref=f2e235]: Supply Chain & Procurement
+          - generic [ref=f2e236]: Supply Chain
+          - generic [ref=f2e237]: "8"
+          - generic [ref=f2e238]:
+            - generic "Fidelis Wanalwenge" [ref=f2e239]: FW
+            - generic [ref=f2e240]: Fidelis Wanalwenge
+          - generic [ref=f2e241]: Active
+          - generic [ref=f2e246]: 11 Sep 2026
+        - button "Port clearance demurrage delays for imported electrical switchgear Supply Chain & Procurement Supply Chain 12 WO Wanjiru Otieno Active 18 Sep 2026" [ref=f2e247] [cursor=pointer]:
+          - generic [ref=f2e251]:
+            - link "Port clearance demurrage delays for imported electrical switchgear" [ref=f2e252]:
+              - /url: /risks/1445a516-eab2-48f3-8bad-3b924075bc05
+            - generic [ref=f2e253]: Supply Chain & Procurement
+          - generic [ref=f2e254]: Supply Chain
+          - generic [ref=f2e255]: "12"
+          - generic [ref=f2e256]:
+            - generic "Wanjiru Otieno" [ref=f2e257]: WO
+            - generic [ref=f2e258]: Wanjiru Otieno
+          - generic [ref=f2e259]: Active
+          - generic [ref=f2e264]: 18 Sep 2026
+        - button "Single supplier dependency for critical turbine spare parts Supply Chain & Procurement Supply Chain 16 KM Kevin Mutua Active 25 Sep 2026" [ref=f2e265] [cursor=pointer]:
+          - generic [ref=f2e269]:
+            - link "Single supplier dependency for critical turbine spare parts" [ref=f2e270]:
+              - /url: /risks/f150184f-c17d-4197-8207-94c97faa795a
+            - generic [ref=f2e271]: Supply Chain & Procurement
+          - generic [ref=f2e272]: Supply Chain
+          - generic [ref=f2e273]: "16"
+          - generic [ref=f2e274]:
+            - generic "Kevin Mutua" [ref=f2e275]: KM
+            - generic [ref=f2e276]: Kevin Mutua
+          - generic [ref=f2e277]: Active
+          - generic [ref=f2e282]: 25 Sep 2026
+        - button "Inaccurate bulk metering calibration leading to unbilled losses Operational Commercial 12 GW Grace Wambui Active 02 Oct 2026" [ref=f2e283] [cursor=pointer]:
+          - generic [ref=f2e287]:
+            - link "Inaccurate bulk metering calibration leading to unbilled losses" [ref=f2e288]:
+              - /url: /risks/e1ef84c2-1b26-4ed7-87a9-61376db7aa4a
+            - generic [ref=f2e289]: Operational
+          - generic [ref=f2e290]: Commercial
+          - generic [ref=f2e291]: "12"
+          - generic [ref=f2e292]:
+            - generic "Grace Wambui" [ref=f2e293]: GW
+            - generic [ref=f2e294]: Grace Wambui
+          - generic [ref=f2e295]: Active
+          - generic [ref=f2e300]: 02 Oct 2026
+        - button "Cross-border electricity trading price volatility Financial Commercial 9 FC Faith Chebet Inactive 09 Oct 2026" [ref=f2e301] [cursor=pointer]:
+          - generic [ref=f2e305]:
+            - link "Cross-border electricity trading price volatility" [ref=f2e306]:
+              - /url: /risks/a25d1753-cd21-4fcc-b923-2f99d4a96411
+            - generic [ref=f2e307]: Financial
+          - generic [ref=f2e308]: Commercial
+          - generic [ref=f2e309]: "9"
+          - generic [ref=f2e310]:
+            - generic "Faith Chebet" [ref=f2e311]: FC
+            - generic [ref=f2e312]: Faith Chebet
+          - generic [ref=f2e313]: Inactive
+          - generic [ref=f2e324]: 09 Oct 2026
+      - generic [ref=f2e325]:
+        - paragraph [ref=f2e326]: Showing 1 to 8 of 49 risks in the enterprise register
+        - generic [ref=f2e327]:
+          - button "Previous" [disabled] [ref=f2e328]
+          - button "Next" [ref=f2e329] [cursor=pointer]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f2e159] [cursor=pointer]
+  - alert [ref=f2e163]

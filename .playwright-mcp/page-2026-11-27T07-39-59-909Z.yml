@@ -1,0 +1,189 @@
+- generic [active] [ref=f2e1]:
+  - banner [ref=f2e355]:
+    - link [ref=f2e356] [cursor=pointer]:
+      - /url: /
+      - img "Synergetic" [ref=f2e357]
+    - navigation [ref=f2e358]:
+      - link "Dashboard" [ref=f2e359] [cursor=pointer]:
+        - /url: /
+      - link "Registers" [ref=f2e361] [cursor=pointer]:
+        - /url: /risks
+      - link "Heat map" [ref=f2e364] [cursor=pointer]:
+        - /url: /risks/distribution
+      - link "Reports" [ref=f2e365] [cursor=pointer]:
+        - /url: /reports
+    - generic [ref=f2e367]:
+      - textbox "Search risks, registers and mitigation plans" [ref=f2e371]:
+        - /placeholder: Search risks, IDs, owners
+      - generic [ref=f2e372]: ⌘K
+    - button "Toggle dark mode" [ref=f2e373] [cursor=pointer]
+    - link "Notifications" [ref=f2e383] [cursor=pointer]:
+      - /url: /notifications
+    - link "New risk" [ref=f2e388] [cursor=pointer]:
+      - /url: /risks/new
+    - button "Account menu" [ref=f2e391] [cursor=pointer]
+  - main [ref=f2e392]:
+    - generic [ref=f2e393]:
+      - generic [ref=f2e394]:
+        - heading "Good morning, Wanjiru" [level=1] [ref=f2e395]
+        - generic [ref=f2e399]:
+          - button "Department IT" [ref=f2e401] [cursor=pointer]:
+            - generic [ref=f2e402]: Department
+            - generic [ref=f2e403]: IT
+          - button "Period Nov 2026" [ref=f2e407] [cursor=pointer]:
+            - generic [ref=f2e408]: Period
+            - generic [ref=f2e409]: Nov 2026
+          - button [ref=f2e412] [cursor=pointer]
+      - generic [ref=f2e416]:
+        - generic [ref=f2e418]:
+          - paragraph [ref=f2e419]: Review compliance
+          - generic [ref=f2e420]:
+            - generic [ref=f2e421]:
+              - paragraph [ref=f2e422]: 38%
+              - paragraph [ref=f2e423]: of 8 risks reviewed
+            - generic [ref=f2e425]:
+              - generic [ref=f2e426]:
+                - generic [ref=f2e427]:
+                  - generic [ref=f2e428]: Reviewed
+                  - generic [ref=f2e430]: "3"
+                - generic [ref=f2e431]:
+                  - generic [ref=f2e432]: Pending
+                  - generic [ref=f2e434]: "5"
+              - img "Reviewed 3, Pending 5" [ref=f2e435]
+            - link "Open Review compliance" [ref=f2e438] [cursor=pointer]:
+              - /url: /risks/register/b1d33469-5862-40d3-ba03-4659d443d5ca?status=all&review=reviewed
+        - generic [ref=f2e442]:
+          - paragraph [ref=f2e443]: Mitigation coverage
+          - generic [ref=f2e444]:
+            - generic [ref=f2e445]:
+              - paragraph [ref=f2e446]: 75%
+              - paragraph [ref=f2e447]: of 8 risks covered
+            - generic [ref=f2e449]:
+              - generic [ref=f2e450]:
+                - generic [ref=f2e451]:
+                  - generic [ref=f2e452]: With plan
+                  - generic [ref=f2e454]: "6"
+                - generic [ref=f2e455]:
+                  - generic [ref=f2e456]: No plan
+                  - generic [ref=f2e458]: "2"
+              - img "With plan 6, No plan 2" [ref=f2e459]
+            - link "Open Mitigation coverage" [ref=f2e462] [cursor=pointer]:
+              - /url: /risks/register/b1d33469-5862-40d3-ba03-4659d443d5ca?status=all&quick=noMitigation
+      - generic [ref=f2e465]:
+        - generic [ref=f2e467]:
+          - generic [ref=f2e468]:
+            - heading "Risk breakdown" [level=2] [ref=f2e469]
+            - group "Group by" [ref=f2e470]:
+              - button "Category" [pressed] [ref=f2e471] [cursor=pointer]
+              - button "Division" [ref=f2e472] [cursor=pointer]
+          - generic [ref=f2e473]:
+            - generic [ref=f2e474]: Category
+            - generic [ref=f2e475]: Level split
+            - generic [ref=f2e476]: Risks
+          - generic [ref=f2e477]:
+            - link "Technology & Cybersecurity 1 high, 4 medium, 2 low 7" [ref=f2e478] [cursor=pointer]:
+              - /url: /risks/register/b1d33469-5862-40d3-ba03-4659d443d5ca?status=all&category=Technology%20%26%20Cybersecurity
+              - generic "Technology & Cybersecurity" [ref=f2e479]
+              - img "1 high, 4 medium, 2 low" [ref=f2e480]
+              - generic [ref=f2e484]: "7"
+            - link "People & Human Capital 0 high, 1 medium, 0 low 1" [ref=f2e485] [cursor=pointer]:
+              - /url: /risks/register/b1d33469-5862-40d3-ba03-4659d443d5ca?status=all&category=People%20%26%20Human%20Capital
+              - generic "People & Human Capital" [ref=f2e486]
+              - img "0 high, 1 medium, 0 low" [ref=f2e487]
+              - generic [ref=f2e489]: "1"
+        - generic [ref=f2e491]:
+          - heading "Risk level distribution" [level=2] [ref=f2e492]
+          - generic [ref=f2e493]:
+            - generic [ref=f2e502]:
+              - generic [ref=f2e503]: Total risks
+              - generic [ref=f2e504]: "8"
+            - generic [ref=f2e505]:
+              - generic [ref=f2e506]: HIGH
+              - generic [ref=f2e507]: 1 risk
+              - generic [ref=f2e508]: 13% of total
+            - generic [ref=f2e509]:
+              - generic [ref=f2e510]: MEDIUM
+              - generic [ref=f2e511]: 5 risks
+              - generic [ref=f2e512]: 63% of total
+            - generic [ref=f2e513]:
+              - generic [ref=f2e514]: LOW
+              - generic [ref=f2e515]: 2 risks
+              - generic [ref=f2e516]: 25% of total
+          - link "View details" [ref=f2e517] [cursor=pointer]:
+            - /url: /risks/distribution
+      - generic [ref=f2e521]:
+        - generic [ref=f2e522]:
+          - heading "Highest rated risks" [level=2] [ref=f2e523]
+          - link "View all" [ref=f2e524] [cursor=pointer]:
+            - /url: /risks/register/b1d33469-5862-40d3-ba03-4659d443d5ca
+        - generic [ref=f2e527]:
+          - generic [ref=f2e528]:
+            - generic [ref=f2e529]: Risk
+            - button "Department" [ref=f2e531] [cursor=pointer]
+            - generic [ref=f2e534]:
+              - button "Filter by rating" [ref=f2e535] [cursor=pointer]: Rating
+              - button "Sort by rating, currently desc" [ref=f2e536] [cursor=pointer]
+            - button "Owner" [ref=f2e540] [cursor=pointer]
+            - button "Status" [ref=f2e544] [cursor=pointer]
+            - button "Last review" [ref=f2e548] [cursor=pointer]
+          - button "Unpatched ERP servers exposed to ransomware Technology & Cybersecurity IT 16 Wanjiru Otieno Wanjiru Otieno Active 03 Nov 2026" [ref=f2e551] [cursor=pointer]:
+            - generic [ref=f2e555]:
+              - link "Unpatched ERP servers exposed to ransomware" [ref=f2e556]:
+                - /url: /risks/4ac1c373-ad06-4b03-866b-324194bbc098
+              - generic [ref=f2e557]: Technology & Cybersecurity
+            - generic [ref=f2e558]: IT
+            - generic [ref=f2e559]: "16"
+            - generic [ref=f2e560]:
+              - generic "Wanjiru Otieno" [ref=f2e561]
+              - generic [ref=f2e562]: Wanjiru Otieno
+            - generic [ref=f2e563]: Active
+            - generic [ref=f2e568]: 03 Nov 2026
+          - button "Phishing awareness training overdue People & Human Capital IT 12 KM Kevin Mutua Active 23 Oct 2026" [ref=f2e569] [cursor=pointer]:
+            - generic [ref=f2e573]:
+              - link "Phishing awareness training overdue" [ref=f2e574]:
+                - /url: /risks/a4cadd5a-2433-42e9-a38f-eb5950152e12
+              - generic [ref=f2e575]: People & Human Capital
+            - generic [ref=f2e576]: IT
+            - generic [ref=f2e577]: "12"
+            - generic [ref=f2e578]:
+              - generic "Kevin Mutua" [ref=f2e579]: KM
+              - generic [ref=f2e580]: Kevin Mutua
+            - generic [ref=f2e581]: Active
+            - generic [ref=f2e586]: 23 Oct 2026
+          - button "Shared admin accounts on core supervisory systems Technology & Cybersecurity IT 12 Unassigned Active 30 Oct 2026" [ref=f2e587] [cursor=pointer]:
+            - generic [ref=f2e591]:
+              - link "Shared admin accounts on core supervisory systems" [ref=f2e592]:
+                - /url: /risks/b03cc050-943f-45ca-a133-aca68053d203
+              - generic [ref=f2e593]: Technology & Cybersecurity
+            - generic [ref=f2e594]: IT
+            - generic [ref=f2e595]: "12"
+            - generic [ref=f2e596]: Unassigned
+            - generic [ref=f2e598]: Active
+            - generic [ref=f2e603]: 30 Oct 2026
+          - button "Absence of synchronous secondary disaster recovery site Technology & Cybersecurity IT 10 PN Peter Njoroge Active 02 Oct 2026" [ref=f2e604] [cursor=pointer]:
+            - generic [ref=f2e608]:
+              - link "Absence of synchronous secondary disaster recovery site" [ref=f2e609]:
+                - /url: /risks/b9a9e7e1-3f0b-4d19-b464-f5c4f3e3a1c1
+              - generic [ref=f2e610]: Technology & Cybersecurity
+            - generic [ref=f2e611]: IT
+            - generic [ref=f2e612]: "10"
+            - generic [ref=f2e613]:
+              - generic "Peter Njoroge" [ref=f2e614]: PN
+              - generic [ref=f2e615]: Peter Njoroge
+            - generic [ref=f2e616]: Active
+            - generic [ref=f2e621]: 02 Oct 2026
+          - button "Legacy VPN lacks multi-factor authentication Technology & Cybersecurity IT 10 BK Brian Kiprono Active 03 Jul 2026" [ref=f2e622] [cursor=pointer]:
+            - generic [ref=f2e626]:
+              - link "Legacy VPN lacks multi-factor authentication" [ref=f2e627]:
+                - /url: /risks/00aa755c-7edb-4fae-a9fa-5d9fcc08184f
+              - generic [ref=f2e628]: Technology & Cybersecurity
+            - generic [ref=f2e629]: IT
+            - generic [ref=f2e630]: "10"
+            - generic [ref=f2e631]:
+              - generic "Brian Kiprono" [ref=f2e632]: BK
+              - generic [ref=f2e633]: Brian Kiprono
+            - generic [ref=f2e634]: Active
+            - generic [ref=f2e639]: 03 Jul 2026
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f2e159] [cursor=pointer]
+  - alert [ref=f2e163]: Good morning,

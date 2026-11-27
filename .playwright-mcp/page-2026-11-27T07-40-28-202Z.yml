@@ -1,0 +1,36 @@
+- generic [active] [ref=f4e1]:
+  - banner [ref=f4e2]:
+    - link [ref=f4e3] [cursor=pointer]:
+      - /url: /
+      - img "Synergetic" [ref=f4e4]
+    - navigation [ref=f4e5]:
+      - link "Dashboard" [ref=f4e6] [cursor=pointer]:
+        - /url: /
+      - link "Registers" [ref=f4e8] [cursor=pointer]:
+        - /url: /risks
+      - link "Heat map" [ref=f4e11] [cursor=pointer]:
+        - /url: /risks/distribution
+      - link "Reports" [ref=f4e12] [cursor=pointer]:
+        - /url: /reports
+    - generic [ref=f4e14]:
+      - textbox "Search risks, registers and mitigation plans" [ref=f4e18]:
+        - /placeholder: Search risks, IDs, owners
+      - generic [ref=f4e19]: ⌘K
+    - button "Toggle dark mode" [ref=f4e20] [cursor=pointer]
+    - link "Notifications" [ref=f4e30] [cursor=pointer]:
+      - /url: /notifications
+    - link "New risk" [ref=f4e35] [cursor=pointer]:
+      - /url: /risks/new
+    - button "Account menu" [ref=f4e38] [cursor=pointer]: AD
+  - main [ref=f4e39]:
+    - generic [ref=f4e40]:
+      - generic [ref=f4e41]:
+        - heading "Notifications" [level=1] [ref=f4e42]
+        - button "Mark all as read" [disabled] [ref=f4e43]
+      - tablist [ref=f4e44]:
+        - tab "All" [selected] [ref=f4e45] [cursor=pointer]
+        - tab "Unread" [ref=f4e46] [cursor=pointer]
+      - generic "Loading notifications" [ref=f4e47]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f4e56] [cursor=pointer]
+  - alert [ref=f4e60]

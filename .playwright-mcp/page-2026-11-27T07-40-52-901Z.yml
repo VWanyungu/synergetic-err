@@ -1,0 +1,149 @@
+- generic [active] [ref=f5e1]:
+  - banner [ref=f5e2]:
+    - link [ref=f5e3] [cursor=pointer]:
+      - /url: /
+      - img "Synergetic" [ref=f5e4]
+    - navigation [ref=f5e5]:
+      - link "Dashboard" [ref=f5e6] [cursor=pointer]:
+        - /url: /
+      - link "Registers" [ref=f5e8] [cursor=pointer]:
+        - /url: /risks
+      - link "Heat map" [ref=f5e11] [cursor=pointer]:
+        - /url: /risks/distribution
+      - link "Reports" [ref=f5e12] [cursor=pointer]:
+        - /url: /reports
+      - link "Admin" [ref=f5e66] [cursor=pointer]:
+        - /url: /admin
+    - generic [ref=f5e14]:
+      - textbox "Search risks, registers and mitigation plans" [ref=f5e18]:
+        - /placeholder: Search risks, IDs, owners
+      - generic [ref=f5e19]: ⌘K
+    - button "Toggle dark mode" [ref=f5e20] [cursor=pointer]
+    - link "Notifications" [ref=f5e30] [cursor=pointer]:
+      - /url: /notifications
+    - link "New risk" [ref=f5e35] [cursor=pointer]:
+      - /url: /risks/new
+    - button "Account menu" [ref=f5e38] [cursor=pointer]
+  - main [ref=f5e39]:
+    - generic [ref=f5e67]:
+      - generic [ref=f5e68]:
+        - navigation "Breadcrumb" [ref=f5e69]:
+          - link "Risk Register" [ref=f5e70] [cursor=pointer]:
+            - /url: /risks
+          - generic [ref=f5e73]: IT-06
+        - heading "Unpatched ERP servers exposed to ransomware IT-06 Edit title" [level=1] [ref=f5e74]:
+          - generic [ref=f5e75]: Unpatched ERP servers exposed to ransomware
+          - generic [ref=f5e76]: IT-06
+          - button "Edit title" [ref=f5e77] [cursor=pointer]
+        - generic [ref=f5e81]:
+          - generic [ref=f5e82]: Active
+          - paragraph [ref=f5e86]: Wanjiru Otieno logged this risk on 28 Oct 2026 · 2 comments
+        - tablist [ref=f5e87]:
+          - tab "Overview" [selected] [ref=f5e88] [cursor=pointer]
+          - tab "Mitigation plans 2" [ref=f5e89] [cursor=pointer]:
+            - text: Mitigation plans
+            - generic [ref=f5e90]: "2"
+          - tab "Analytics" [ref=f5e91] [cursor=pointer]
+      - generic [ref=f5e92]:
+        - generic [ref=f5e93]:
+          - generic [ref=f5e94]:
+            - region "Description" [ref=f5e95]:
+              - paragraph [ref=f5e96]: Description
+              - generic [ref=f5e97]:
+                - generic [ref=f5e98]:
+                  - generic "Wanjiru Otieno" [ref=f5e99]
+                  - generic [ref=f5e100]: Wanjiru Otieno
+                  - generic [ref=f5e101]: logged this risk on 28 Oct 2026
+                  - generic [ref=f5e102]:
+                    - button "Edited by Fidelis Wanalwenge" [ref=f5e104] [cursor=pointer]
+                    - button "More actions" [ref=f5e108] [cursor=pointer]
+                    - generic [ref=f5e113]: Risk Champion
+                - paragraph [ref=f5e116]: Three ERP application servers are two patch cycles behind. A ransomware infection could stop procurement and payroll processing for up to a week. The backup restore process has not been tested since March.
+            - region "Activity" [ref=f5e117]:
+              - button "Activity Show activity" [ref=f5e118] [cursor=pointer]:
+                - generic [ref=f5e123]: Activity
+                - generic [ref=f5e124]: Show activity
+          - region "Add a comment" [ref=f5e127]:
+            - heading "Add a comment" [level=2] [ref=f5e128]
+            - generic [ref=f5e129]:
+              - generic [ref=f5e130]:
+                - button "write" [ref=f5e131] [cursor=pointer]
+                - button "preview" [ref=f5e132] [cursor=pointer]
+                - generic [ref=f5e133]:
+                  - button "Bold" [ref=f5e134] [cursor=pointer]
+                  - button "Italic" [ref=f5e137] [cursor=pointer]
+                  - button "Bulleted list" [ref=f5e140] [cursor=pointer]
+                  - button "Link" [ref=f5e142] [cursor=pointer]
+                  - button "Attach files" [ref=f5e146] [cursor=pointer]
+              - generic [ref=f5e150]:
+                - generic [ref=f5e151]: Comment
+                - textbox "Comment" [ref=f5e152]:
+                  - /placeholder: Use Markdown to format your comment
+              - button "Paste, drop, or click to add files" [ref=f5e153] [cursor=pointer]
+            - generic [ref=f5e156]:
+              - button "Close risk" [ref=f5e157] [cursor=pointer]
+              - button "Comment" [disabled] [ref=f5e161]
+        - complementary "Risk details" [ref=f5e162]:
+          - generic [ref=f5e163]:
+            - generic [ref=f5e164]:
+              - paragraph [ref=f5e165]: Risk rating
+              - button "Edit risk rating" [ref=f5e166] [cursor=pointer]
+            - img "Risk rating 16 out of 25, High" [ref=f5e170]:
+              - generic [ref=f5e183]:
+                - generic [ref=f5e184]: "16"
+                - generic [ref=f5e185]: Out of 25
+                - generic [ref=f5e186]: High
+          - generic [ref=f5e187]:
+            - generic [ref=f5e188]:
+              - paragraph [ref=f5e189]: Risk response
+              - button "Edit risk response" [ref=f5e190] [cursor=pointer]
+            - paragraph [ref=f5e194]: Avoid
+          - generic [ref=f5e195]:
+            - generic [ref=f5e196]:
+              - paragraph [ref=f5e197]: Category
+              - button "Edit category" [ref=f5e198] [cursor=pointer]
+            - paragraph [ref=f5e202]: Technology & Cybersecurity
+          - generic [ref=f5e203]:
+            - generic [ref=f5e204]:
+              - paragraph [ref=f5e205]: Affected divisions
+              - button "Edit affected divisions" [ref=f5e206] [cursor=pointer]
+            - list [ref=f5e210]:
+              - listitem [ref=f5e211]: Corporate Services
+              - listitem [ref=f5e212]: TLM
+          - generic [ref=f5e213]:
+            - generic [ref=f5e214]:
+              - paragraph [ref=f5e215]: Risk owner
+              - button "Edit risk owner" [ref=f5e216] [cursor=pointer]
+            - generic [ref=f5e220]:
+              - generic "Wanjiru Otieno" [ref=f5e221]
+              - generic [ref=f5e222]:
+                - paragraph [ref=f5e223]: Wanjiru Otieno
+                - paragraph [ref=f5e224]: Risk Champion, IT
+          - generic [ref=f5e225]:
+            - paragraph [ref=f5e226]: Review
+            - generic [ref=f5e227]:
+              - generic [ref=f5e228]:
+                - generic [ref=f5e229]: Last reviewed
+                - generic [ref=f5e230]: 3 Nov 2026
+              - button "Log review" [ref=f5e231] [cursor=pointer]
+          - generic [ref=f5e235]:
+            - paragraph [ref=f5e236]: Department
+            - paragraph [ref=f5e237]: IT
+          - generic [ref=f5e238]:
+            - paragraph [ref=f5e239]: Participants
+            - list [ref=f5e240]:
+              - listitem [ref=f5e241]:
+                - generic "Wanjiru Otieno" [ref=f5e242]
+              - listitem [ref=f5e243]:
+                - generic "Fidelis Wanalwenge" [ref=f5e244]: FW
+          - generic [ref=f5e245]:
+            - button "Transfer risk" [ref=f5e246] [cursor=pointer]
+            - button "Archive risk" [ref=f5e250] [cursor=pointer]
+            - button "Copy link" [ref=f5e254] [cursor=pointer]
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=f5e258]:
+        - button "Close toast" [ref=f5e259] [cursor=pointer]
+        - generic [ref=f5e267]: Request rejected
+  - button "Open Next.js Dev Tools" [ref=f5e61] [cursor=pointer]
+  - alert [ref=f5e65]

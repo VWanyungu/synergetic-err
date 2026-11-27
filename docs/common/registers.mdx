@@ -1,32 +1,35 @@
 ---
 title: "Risk registers"
-description: "Browse, search and filter risks by department or division."
 ---
 
-Open **Registers** in the top bar. The **Departments** and **Divisions** tabs list every register; choose one to open it.
+Hover on **Registers** in the top bar. The **Departments** and **Divisions** tabs list every register; choose one to open it.
 
-<Frame><img src="/images/department-register.png" alt="Department risk register for Commercial" /></Frame>
+<Frame><img src="/images/Screenshot from 2026-11-27 11-14-56.png" alt="Department risk register for Commercial" /></Frame>
 
 ## Find a risk
 
 - **Search** by title, ID or owner. Press <kbd>⌘K</kbd> / <kbd>Ctrl K</kbd> anywhere for global search.
 - Expand a row with the arrow for a quick summary, or select it to open the [risk detail](/common/risk-detail).
+    <Frame><img src="/images/expanded risk.png" alt="Department risk register for Commercial" /></Frame>
 - Use the breadcrumb switcher (next to the register name) to jump between departments without going back.
+    <Frame><img src="/images/department switcher.png" alt="Department risk register for Commercial" /></Frame>
 
 ## Filters
 
 Active filters show as chips above the list; **Clear filters** resets them.
+
+Filters work together: each one narrows the results left by the others. For example, selecting a category and a rating shows only risks that match both.
 
 <Frame><img src="/images/register-filters.png" alt="Register filters" /></Frame>
 
 | Filter | What it does |
 |---|---|
 | **Category** | Shows only risks in one category. |
-| **Mitigation** | Narrows by how the risk is being handled. **Accept**, **Mitigate**, **Transfer** and **Avoid** show risks with that [risk response](/reference/scoring). **No mitigation plan** shows risks that have no mitigation plan at all, which is the gap to close. |
+| **Mitigation** | Narrows by how the risk is being handled. **Accept**, **Mitigate**, **Transfer** and **Avoid** show risks with that [risk response](/reference/scoring). **No mitigation plan** shows risks that have no mitigation plan at all. |
 | **Period** | Shows the register as it stood in a given month, with each risk's rating for that month. It also sets the month used by **Last review**. |
 | **Order** | Sorts the list: latest, highest or lowest rating, last reviewed, title, department, owner or status. |
 
-The column headers add more:
+The column headers are additional filters:
 
 | Column | What it does |
 |---|---|
@@ -35,8 +38,6 @@ The column headers add more:
 | **Owner** | Shows one person's risks. |
 | **Status** | Shows risks that are still open (**Active**), closed (**Inactive**) or **Archived**. |
 | **Last review** | **Reviewed** shows risks with a review logged in the selected period. **Not reviewed** shows the ones still waiting. |
-
-You can sort by any column using its header.
 
 ## Division registers
 
