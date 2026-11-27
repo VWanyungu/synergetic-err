@@ -1,6 +1,6 @@
 ---
 title: "Risk detail"
-description: "Rating, mitigation plans, comments and history for one risk."
+description: "Rating, mitigation plans, comments, review, transfer and archiving for one risk."
 ---
 
 <Frame><img src="/images/risk-detail.png" alt="Risk detail page" /></Frame>
@@ -15,10 +15,35 @@ description: "Rating, mitigation plans, comments and history for one risk."
 
 Rating, response, category, affected divisions and owner. Use the gear icon beside each to change it. Every change is recorded in **Activity** with who made it and the old and new values.
 
+<Frame><img src="/images/risk-sidebar.png" alt="Side panel with review, transfer, archive and copy link" /></Frame>
+
+## Review
+
+The **Review** section shows when the risk was last reviewed. Select **Log review** after you have gone through the risk; it records the review in **Activity** and updates **Last reviewed**. This is how a risk counts as reviewed for the month. See [Mitigation plans and reviews](/roles/department/mitigation-and-review).
+
 ## Comments
 
-Write in Markdown and attach files by pasting, dropping or clicking. Commenting also counts as that month's review of the risk. Posted comments cannot be edited or deleted.
+Write in Markdown and attach files by pasting, dropping or clicking. Posted comments cannot be edited or deleted. A comment does not log a review.
 
 ## Closing a risk
 
-Select **Close risk** once its mitigation is done. Closed risks become Inactive and can be reopened if the risk returns.
+Select **Close risk** beside the comment box once the risk is dealt with. Closing sets the risk response to **Accept**. Select **Open risk** to reopen it; the response stays as it is.
+
+## Transferring a risk
+
+Choose **Transfer risk** in the side panel, pick the new department and confirm. The new department then owns the risk and is the only one that can edit it. The old department can still read it and comment, and the transfer is kept in a **Transferred** history on the risk.
+
+<Frame><img src="/images/transfer-risk.png" alt="Transfer risk dialog" /></Frame>
+
+## Archiving a risk
+
+Archiving takes a risk out of the registers and the heat map.
+
+- A Risk Officer or Admin chooses **Archive risk** and it is archived straight away.
+- A Risk Champion or Department Lead chooses **Request archive**, then **Send request**. A Risk Officer decides it. See [Closing and archiving](/roles/department/closing-and-archiving).
+
+Archived risks are found under the **Archived** status filter in the register, and a Risk Officer or Admin can bring one back with **Unarchive risk**.
+
+## Copy link
+
+**Copy link** puts the risk's address on your clipboard so you can share it. Whoever opens it needs access to that risk.
