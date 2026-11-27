@@ -5,24 +5,27 @@ description: "One place to log, score, mitigate and review risks across Synerget
 
 The Enterprise Risk Register (ERR) replaces the spreadsheet. Every risk has an owner, a score, a mitigation plan and a full history, and the monthly review is driven from the same data.
 
-<Frame>
-  <img src="/images/dashboard.png" alt="ERR dashboard showing review compliance, mitigation coverage and risk breakdown" />
-</Frame>
+## Two environments
 
-## Start here
+The register runs in two places. They look the same, but they are used for different things.
 
-<CardGroup cols={2}>
-  <Card title="Signing in" icon="right-to-bracket" href="/common/signing-in">Get into the portal.</Card>
-  <Card title="Resetting your password" icon="key" href="/common/resetting-password">Forgot it? Get a new one.</Card>
-</CardGroup>
+| | Production | Staging |
+|---|---|---|
+| **What it is** | The live register. | A test copy where changes arrive before they go live. |
+| **Use it for** | Your real, day-to-day work: logging risks, mitigation plans and reviews. | Seeing the current state of the app out of curiosity, and testing a new feature before it reaches production. |
+| **Data** | Real, and it feeds the dashboard and monthly reports. | Test data. It may change or be cleared at any time. |
 
-## Pick your role
+<Warning>Record real risks only in production. Anything you enter in staging is not part of the official register and does not appear in production.</Warning>
 
-<CardGroup cols={2}>
-  <Card title="Risk Champion / Department Lead" icon="clipboard-list" href="/roles/department/overview">Maintain your department's risks.</Card>
-  <Card title="Division Lead" icon="eye" href="/roles/division-lead/overview">Read your division's risks.</Card>
-  <Card title="Risk Officer" icon="shield-check" href="/roles/risk-officer/overview">Oversee everything and decide archives.</Card>
-  <Card title="Admin" icon="user-gear" href="/roles/admin/overview">Manage users and access.</Card>
-</CardGroup>
+## Quickstart
 
-Not sure which you are? See [Find your role](/roles/index).
+<Steps>
+  <Step title="Sign in">
+    Use your work email and password. See [Signing in](/common/signing-in), or [reset your password](/common/resetting-password) if you cannot get in.
+  </Step>
+  <Step title="Do your first task">
+    - **Risk Champion / Department Lead:** [log a risk](/roles/department/creating-a-risk).
+    - **Division Lead:** open your [division register](/roles/division-lead/overview).
+    - **Risk Officer / Admin:** open the [dashboard](/roles/risk-officer/oversight).
+  </Step>
+</Steps>

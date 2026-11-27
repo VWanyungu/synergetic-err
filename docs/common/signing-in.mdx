@@ -1,32 +1,42 @@
 ---
 title: "Signing in"
-description: "Sign in, sign out and what to do when you cannot get in."
+description: "Sign in, sign out and fix the most common sign-in problems."
 ---
 
-Everyone signs in the same way, whatever their role. Accounts are created by an Admin or Risk Officer; there is no public sign-up.
+Accounts are created for you by an Admin or Risk Officer; there is no public sign-up. Use the address for the [environment](/#two-environments) you need.
 
 <Steps>
   <Step title="Open the portal">
-    Go to the Risk Register address your organisation gave you.
+    Go to the Risk Register address you were given.
     <Frame><img src="/images/login.png" alt="Login page" /></Frame>
   </Step>
   <Step title="Enter your details">
     Type your work email and password, then select **Log in**.
   </Step>
-  <Step title="Land on your home page">
-    Most roles open on the dashboard. A [Division Lead](/roles/division-lead/overview) opens straight on their division's register.
-  </Step>
 </Steps>
 
-To sign out, open your avatar (top right) and choose **Log out**.
+## Signing out
 
-## If you cannot sign in
+Open your avatar (top right) and choose **Log out**.
 
-| What you see | What to do |
-|---|---|
-| **Incorrect email or password** | Check for typos, then [reset your password](/common/resetting-password). |
-| Right password, still refused | Your account may be deactivated. Ask an Admin or Risk Officer. |
-| Sent back to the login page with a session-expired notice | Your session ended. Sign in again. |
-| No account yet | Ask an Admin or Risk Officer to create one. |
+<Frame><img src="/images/logout.png" alt="Account menu with My profile and Log out" /></Frame>
 
-<Note>Changing your role, department or division signs you out so the change applies. Sign in again to continue.</Note>
+## Common sign-in problems
+
+<AccordionGroup>
+  <Accordion title="Incorrect email or password">
+    Check the email for typos and that Caps Lock is off, then [reset your password](/common/resetting-password) if you still cannot get in.
+  </Accordion>
+  <Accordion title="The password is right but I am still refused">
+    Your account may be deactivated. Ask an Admin or Risk Officer to check it.
+  </Accordion>
+  <Accordion title="I was sent back to the login page">
+    Your session has ended, or an Admin changed your access, which signs you out. Sign in again.
+  </Accordion>
+  <Accordion title="I signed in on staging with my production password, or the reverse">
+    Staging and production are separate, so an account or password change in one does not carry to the other. Reset it in the environment you are using.
+  </Accordion>
+  <Accordion title="I do not have an account">
+    Ask an Admin or Risk Officer to create one.
+  </Accordion>
+</AccordionGroup>
