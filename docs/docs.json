@@ -15,9 +15,7 @@
           {
             "group": "Get started",
             "pages": [
-              "index",
-              "quickstart",
-              "roles/index"
+              "index"
             ]
           },
           {
@@ -135,6 +133,18 @@
     {
       "source": "/guides/administration",
       "destination": "/roles/admin/managing-users"
+    },
+    {
+      "source": "/quickstart",
+      "destination": "/"
+    },
+    {
+      "source": "/roles/index",
+      "destination": "/"
     }
-  ]
+  ],
+  "logo": {
+    "light": "/images/logo.png",
+    "dark": "/images/logo.png"
+  }
 }
