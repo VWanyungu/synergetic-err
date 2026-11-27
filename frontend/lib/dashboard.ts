@@ -24,5 +24,18 @@ export interface DashboardData {
   coverage: { total: number; withPlan: number; noPlan: number };
   levels: { total: number; high: number; medium: number; low: number };
   breakdown: { department: BreakdownRow[]; category: BreakdownRow[]; division: BreakdownRow[] };
-  top: RegisterRisk[];
+  top: (RegisterRisk & { plans: ReportPlan[] })[];
 }
+
+/** The dashboard's cards: everything except the Highest rated risks table, which loads on its own. */
+export type DashboardSummary = Omit<DashboardData, "top">;
+
+/** A mitigation plan as it stood at the end of the report month. */
+export interface ReportPlan {
+  title: string;
+  status: "not_started" | "in_progress" | "completed";
+  dueDate: string | null;
+  owner: string | null;
+}
+
+export const PLAN_STATUS: Record<ReportPlan["status"], string> = { not_started: "Not started", in_progress: "In progress", completed: "Complete" };
