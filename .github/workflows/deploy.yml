@@ -11,7 +11,12 @@ env:
   FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME || 'vwanyungu' }}/synergetic-err-frontend
 
 jobs:
+  test:
+    name: Tests
+    uses: ./.github/workflows/test.yml
+
   build-and-push:
+    needs: test
     name: Build & Push Docker Images
     runs-on: ubuntu-latest
     steps:
